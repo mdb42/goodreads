@@ -8,4 +8,8 @@ setup_requirements.bat
 data/
 config.json
 kaggle.json
+notes.md
+test.css
+logs/
+*.log
 

@@ -1,0 +1,44 @@
+{
+    "application": {
+        "name": "Goodreads Analytics",
+        "version": "0.1.0",
+        "description": "Query and visualization tool for Goodreads datasets",
+        "author": "Matthew Del Branson",
+        "email": "mdelbranson@gmail.com",
+        "url": "https://github.com/mdb42/goodreads"
+    },
+    "help": {
+        "path": "https://github.com/mdb42/goodreads/blob/main/README.md"
+    },
+    "display": {
+        "enable_high_dpi": true,
+        "theme": "dark",
+        "font_size": "normal"
+    },
+    "logging": {
+        "level": "INFO",
+        "file_path": "logs/app.log",
+        "max_file_size_mb": 10,
+        "backup_count": 3
+    },
+    "data": {
+        "dataset_path": "data/goodreads",
+        "default_dataset": "goodbooks-10k",
+        "database": {
+            "type": "sqlite",
+            "path": "data/goodreads.db"
+        },
+        "cache": {
+            "enabled": true,
+            "max_size_mb": 100
+        },
+        "auto_update_datasets": false
+    },
+    "recent_queries": [],
+    "recent_visualizations": [],
+    "user_preferences": {
+        "save_session": true,
+        "auto_load_last_session": true,
+        "results_per_page": 20
+    }
+}
