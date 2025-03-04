@@ -13,55 +13,67 @@ from PyQt6.QtWidgets import (
 
 from app.gui.title_bar import TitleBar
 from app.gui.data_browser import DataBrowser
-\
-import qdarkstyle
+import qdarkstyle  # Removed stray backslash.
 import qtawesome as qta
 
 class MainWindow(QMainWindow):
+    """
+    Main application window for the Goodreads Analytics Tool.
+
+    This frameless window includes a custom title bar, data browser, and status bar.
+    It supports theming (dark/light), manual window resizing, and saving configuration
+    upon exit.
+    """
     def __init__(self, config):
+        """
+        Initialize the main window with the given configuration.
+
+        Args:
+            config (dict): Application configuration with keys for 'display', 'application', etc.
+        """
         super().__init__()
         self.config = config
-        self._is_maximized = False
-        self.title_bar = TitleBar(self)     
+        self._is_maximized = False  # Track maximized state.
+        self.title_bar = TitleBar(self)  # Custom title bar widget.
 
-        # Apply theme
+        # Determine dark mode based on configuration and apply styles.
         self.dark_mode = self.config["display"]["theme"] == "dark"
         self.apply_styles()
 
-        # Remove frame, enable translucent background
+        # Set window flags for a frameless, translucent window.
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        # Set window title
+        # Set the window title from the configuration.
         self.setWindowTitle(config["application"]["name"])
 
-        # For edge-resizing
+        # Variables for manual edge-resizing.
         self._resizing = False
         self._resize_dir = None
         self.border_width = 5
 
-        # Main container
+        # Main container setup.
         container = QWidget(self)
         container.setObjectName("mainContainer")
         vlayout = QVBoxLayout(container)
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.setSpacing(0)
 
-        # Title bar
+        # Add the custom title bar.
         vlayout.addWidget(self.title_bar)
 
-        # Content area
+        # Create the content area.
         self.content = QWidget()
         content_layout = QVBoxLayout(self.content)
         content_layout.setContentsMargins(10, 10, 10, 10)
         
-        # Create and add the data browser
+        # Create and add the data browser widget.
         self.data_browser = DataBrowser(self.config["data"]["database"]["path"])
         content_layout.addWidget(self.data_browser)
         
         vlayout.addWidget(self.content, 1)
 
-        # Status bar
+        # Create and add a status bar.
         sb = QStatusBar()
         sb.showMessage("Ready")
         vlayout.addWidget(sb)
@@ -70,23 +82,28 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(800, 600)
         self.resize(1200, 800)
 
-        # Force an initial style update
+        # Optionally reapply styles after layout setup.
         self.apply_styles()
 
     # ========== Theming / Style ==========
     def toggle_theme(self):
+        """
+        Toggle between dark and light themes and update styles.
+        """
         self.dark_mode = not self.dark_mode
         self.apply_styles()
 
     def apply_styles(self):
         """
-        Use QDarkStyle in dark mode, or revert to native in light mode.
-        Then append custom corner + color rules for #mainContainer and #titleBar.
+        Apply style sheets based on the current theme and window state.
+
+        This method uses QDarkStyle for dark mode or reverts to native styling for light mode,
+        then appends custom CSS for rounded corners on the main container and title bar.
         """
+        # Start with the base stylesheet.
         if self.dark_mode:
-            super().setStyleSheet(qdarkstyle.load_stylesheet_pyqt6())
-            # We want a dark title bar and container
-            # We also want to conditionally remove corners if maximized
+            # Load dark style base.
+            base_css = qdarkstyle.load_stylesheet_pyqt6()
             css_template = """
             #mainContainer {
                 background-color: #212121;
@@ -98,8 +115,7 @@ class MainWindow(QMainWindow):
             }
             """
         else:
-            # Light => revert to OS native
-            super().setStyleSheet("")
+            base_css = ""
             css_template = """
             #mainContainer {
                 background-color: #f5f5f5;
@@ -111,6 +127,7 @@ class MainWindow(QMainWindow):
             }
             """
 
+        # Adjust border radius based on window maximized state.
         if self._is_maximized:
             css = css_template.replace("%BORDER_RADIUS%", "border-radius: 0px;")
             css = css.replace("%TITLE_BAR_RADIUS%", "border-radius: 0px;")
@@ -121,39 +138,41 @@ class MainWindow(QMainWindow):
                 "border-top-left-radius: 10px; border-top-right-radius: 10px;"
             )
 
-        # Append custom styles to whatever is set
-        self.setStyleSheet(self.styleSheet() + css)
+        # Instead of appending repeatedly, reset the style with base_css + custom CSS.
+        full_css = base_css + css
+        self.setStyleSheet(full_css)
 
-        # Update icons in the title bar
+        # Update icons with appropriate colors based on theme.
         icon_color = "white" if self.dark_mode else "black"
-        # Theme button toggles sun/moon
         self.title_bar.theme_btn.setIcon(
             qta.icon('fa5s.sun', color=icon_color) if self.dark_mode
             else qta.icon('fa5s.moon', color=icon_color)
         )
-        # Minimize, maximize/restore, close
         self.title_bar.min_btn.setIcon(qta.icon('fa5s.window-minimize', color=icon_color))
         restore_icon = 'fa5s.window-restore' if self._is_maximized else 'fa5s.window-maximize'
         self.title_bar.max_btn.setIcon(qta.icon(restore_icon, color=icon_color))
         self.title_bar.close_btn.setIcon(qta.icon('fa5s.times', color=icon_color))
-        # App icon
         self.title_bar.app_icon.setIcon(qta.icon('fa5s.book-reader', color=icon_color))
-        # Title text and background color
-        self.title_bar.title_label.setStyleSheet(f"background-color: transparent; color: {icon_color}; font-size: 14px; font-weight: bold;")
+        self.title_bar.title_label.setStyleSheet(
+            f"background-color: transparent; color: {icon_color}; font-size: 14px; font-weight: bold;"
+        )
 
-        # Update icons in the data browser
+        # Update icon colors in the data browser as well.
         if hasattr(self, 'data_browser'):
             self.data_browser.update_icon_colors(self.dark_mode)
 
     # ========== Maximize / Restore ==========
     def toggle_maximize(self):
+        """
+        Toggle between maximized and restored window states and reapply styles.
+        """
         if self._is_maximized:
-            # Restore
+            # Restore window to its previous geometry.
             self._is_maximized = False
-            if self._normal_geometry is not None:
+            if hasattr(self, "_normal_geometry") and self._normal_geometry is not None:
                 self.setGeometry(self._normal_geometry)
         else:
-            # Maximize
+            # Save current geometry and maximize the window.
             self._is_maximized = True
             self._normal_geometry = self.geometry()
             screen_geom = QGuiApplication.primaryScreen().availableGeometry()
@@ -163,6 +182,9 @@ class MainWindow(QMainWindow):
 
     # ========== Resizing Logic ==========
     def mousePressEvent(self, e):
+        """
+        Initiate manual window resizing if mouse is pressed near an edge.
+        """
         if self._is_maximized:
             return super().mousePressEvent(e)
         if e.button() == Qt.MouseButton.LeftButton:
@@ -170,32 +192,40 @@ class MainWindow(QMainWindow):
             if direction:
                 self._resizing = True
                 self._resize_dir = direction
-                self.grabMouse()  # Capture all mouse events
+                self.grabMouse()  # Capture all mouse events.
                 self.setCursor(self.resize_cursor(direction))
                 e.accept()
                 return
         super().mousePressEvent(e)
 
     def mouseReleaseEvent(self, e):
+        """
+        Finalize the resizing operation when the mouse button is released.
+        """
         if e.button() == Qt.MouseButton.LeftButton and self._resizing:
             self._resizing = False
             self._resize_dir = None
-            self.releaseMouse()  # Release the mouse grab
+            self.releaseMouse()  # Release the mouse grab.
             self.setCursor(Qt.CursorShape.ArrowCursor)
             e.accept()
             return
         super().mouseReleaseEvent(e)
 
     def focusOutEvent(self, event):
-        # If focus is lost during a resize, cancel the operation
+        """
+        Cancel resizing if the window loses focus.
+        """
         if self._resizing:
             self._resizing = False
             self._resize_dir = None
-            self.releaseMouse()  # Also release the grab here
+            self.releaseMouse()  # Also release the grab.
             self.setCursor(Qt.CursorShape.ArrowCursor)
         super().focusOutEvent(event)
 
     def mouseMoveEvent(self, e):
+        """
+        Update window size during a manual resize or update cursor if hovering near an edge.
+        """
         if self._is_maximized:
             return super().mouseMoveEvent(e)
 
@@ -210,13 +240,19 @@ class MainWindow(QMainWindow):
 
     def get_resize_direction(self, local_pos):
         """
-        Return which edge/corner is being hovered, or None if not near edges.
+        Determine which edge or corner is being hovered for resizing.
+
+        Args:
+            local_pos (QPoint): The mouse position relative to the window.
+
+        Returns:
+            str or None: A string indicating the edge/corner (e.g., 'top-left', 'right')
+                         or None if not near an edge.
         """
         rect = self.rect()
         x, y = local_pos.x(), local_pos.y()
         bw = self.border_width
 
-        # Edges
         left = (x <= bw)
         right = (x >= rect.width() - bw)
         top = (y <= bw)
@@ -241,6 +277,15 @@ class MainWindow(QMainWindow):
         return None
 
     def resize_cursor(self, direction):
+        """
+        Return the appropriate cursor shape based on the resize direction.
+
+        Args:
+            direction (str): Resize direction (e.g., 'left', 'top-right').
+
+        Returns:
+            Qt.CursorShape: The cursor shape to use.
+        """
         if direction in ["left", "right"]:
             return Qt.CursorShape.SizeHorCursor
         if direction in ["top", "bottom"]:
@@ -253,7 +298,11 @@ class MainWindow(QMainWindow):
 
     def do_resize(self, global_pos, direction):
         """
-        Adjust geometry based on mouse drag in corner/edge.
+        Adjust the window geometry based on the mouse drag in a specific edge or corner.
+
+        Args:
+            global_pos (QPoint): The current global mouse position.
+            direction (str): The edge/corner direction.
         """
         rect = self.geometry()
 
@@ -278,8 +327,15 @@ class MainWindow(QMainWindow):
 
     def get_resize_direction_for_titlebar(self, pos, titlebar_width, titlebar_height):
         """
-        If user clicks top-left or top-right corner in the title bar,
-        return a direction so we can ignore drag and let the main window resize.
+        Determine if a resize should be triggered from the title bar.
+
+        Args:
+            pos (QPoint): Mouse position relative to the title bar.
+            titlebar_width (int): Width of the title bar.
+            titlebar_height (int): Height of the title bar.
+
+        Returns:
+            str or None: Resize direction if in a corner, otherwise None.
         """
         bw = self.border_width
         left_corner = (pos.x() <= bw and pos.y() <= bw)
@@ -288,34 +344,43 @@ class MainWindow(QMainWindow):
         if left_corner:
             return "top-left"
         if right_corner:
-            return "top-right"        
-        if pos.y() <= bw: return "top"
+            return "top-right"
+        if pos.y() <= bw:
+            return "top"
         return None
 
     def leaveEvent(self, event):
-        """Handle mouse leaving window during resize."""
+        """
+        Reset the cursor when the mouse leaves the window during resizing.
+        """
         if self._resizing:
-            # Don't cancel resize operation, but reset cursor
             self.setCursor(Qt.CursorShape.ArrowCursor)
         super().leaveEvent(event)
 
     def closeEvent(self, event):
-        # Save window state/position to config
+        """
+        Save window configuration on close and write settings to config.json.
+        """
         self.config["display"]["theme"] = "dark" if self.dark_mode else "light"
-        
-        # Write config to file
         with open("config.json", "w") as f:
             json.dump(self.config, indent=4, fp=f)
-        
         event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # Example config
+    # Example configuration for testing.
     config = {
         "application": {
             "name": "My Frameless App"
+        },
+        "display": {
+            "theme": "dark"
+        },
+        "data": {
+            "database": {
+                "path": "data/analytics.db"
+            }
         }
     }
     window = MainWindow(config)
