@@ -5,11 +5,15 @@ __pycache__/
 .DS_Store
 .env
 setup_requirements.bat
-data/
 config.json
 kaggle.json
+notes/
 notes.md
 test.css
 logs/
 *.log
+data/
+ucsd-book-graph/
+analytics.db
+hidden/
 

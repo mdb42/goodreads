@@ -1,6 +1,13 @@
 import sys
 import json
 
+from app.gui.title_bar import TitleBar
+from app.gui.setup.setup_widget import SetupWidget
+from app.gui.home_widget import HomeWidget
+from app.gui.data_browser import DataBrowser
+import qdarkstyle
+import qtawesome as qta
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (
@@ -9,81 +16,92 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QStatusBar,
+    QStackedWidget
 )
-
-from app.gui.title_bar import TitleBar
-from app.gui.data_browser import DataBrowser
-import qdarkstyle  # Removed stray backslash.
-import qtawesome as qta
 
 class MainWindow(QMainWindow):
     """
     Main application window for the Goodreads Analytics Tool.
-
-    This frameless window includes a custom title bar, data browser, and status bar.
-    It supports theming (dark/light), manual window resizing, and saving configuration
-    upon exit.
     """
-    def __init__(self, config):
-        """
-        Initialize the main window with the given configuration.
-
-        Args:
-            config (dict): Application configuration with keys for 'display', 'application', etc.
-        """
+    def __init__(self, engine):
         super().__init__()
-        self.config = config
-        self._is_maximized = False  # Track maximized state.
-        self.title_bar = TitleBar(self)  # Custom title bar widget.
+        self.engine = engine  # Store reference to the analytics engine
+        self.config = engine.config
+        self.db = engine.db
+        self._is_maximized = False
+        self.title_bar = TitleBar(self)
 
-        # Determine dark mode based on configuration and apply styles.
+        # Determine dark mode based on configuration and apply styles
         self.dark_mode = self.config["display"]["theme"] == "dark"
         self.apply_styles()
 
-        # Set window flags for a frameless, translucent window.
+        # Set window flags for a frameless, translucent window
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowTitle(self.config["application"]["name"])
 
-        # Set the window title from the configuration.
-        self.setWindowTitle(config["application"]["name"])
-
-        # Variables for manual edge-resizing.
+        # Variables for manual edge-resizing
         self._resizing = False
         self._resize_dir = None
         self.border_width = 5
 
-        # Main container setup.
+        # Main container setup
         container = QWidget(self)
         container.setObjectName("mainContainer")
         vlayout = QVBoxLayout(container)
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.setSpacing(0)
 
-        # Add the custom title bar.
+        # Add the custom title bar
         vlayout.addWidget(self.title_bar)
 
-        # Create the content area.
+        # Create the content area
         self.content = QWidget()
         content_layout = QVBoxLayout(self.content)
+        self.content.setObjectName("content")  # Add this line
         content_layout.setContentsMargins(10, 10, 10, 10)
         
-        # Create and add the data browser widget.
-        self.data_browser = DataBrowser(self.config["data"]["database"]["path"])
-        content_layout.addWidget(self.data_browser)
+        # Create the stacked widget for different application states
+        self.stacked_widget = QStackedWidget()
+        
+        # Create setup and home widgets (to be implemented)
+        self.setup_widget = SetupWidget(self.engine, self)
+        self.home_widget = DataBrowser(self.config["data"]["database"], self)
+        
+        # Add widgets to the stack
+        self.stacked_widget.addWidget(self.setup_widget)  # Index 0: Setup
+        self.stacked_widget.addWidget(self.home_widget)   # Index 1: Home/Main
+        
+        # Add stacked widget to the layout
+        content_layout.addWidget(self.stacked_widget)
         
         vlayout.addWidget(self.content, 1)
 
-        # Create and add a status bar.
-        sb = QStatusBar()
-        sb.showMessage("Ready")
-        vlayout.addWidget(sb)
+        # Create and add a status bar
+        self.status_bar = QStatusBar()
+        self.status_bar.showMessage("Ready")
+        vlayout.addWidget(self.status_bar)
 
         self.setCentralWidget(container)
         self.setMinimumSize(800, 600)
-        self.resize(1200, 800)
-
-        # Optionally reapply styles after layout setup.
+        self.resize(800, 600)
+        
+        # Apply styles after layout setup
         self.apply_styles()
+
+    def show_setup_interface(self):
+        """
+        Switch to the setup wizard interface.
+        """
+        self.stacked_widget.setCurrentIndex(0)
+        self.status_bar.showMessage("Setup required")
+    
+    def show_main_interface(self):
+        """
+        Switch to the main application interface.
+        """
+        self.stacked_widget.setCurrentIndex(1)
+        self.status_bar.showMessage("Ready")
 
     # ========== Theming / Style ==========
     def toggle_theme(self):
@@ -96,9 +114,6 @@ class MainWindow(QMainWindow):
     def apply_styles(self):
         """
         Apply style sheets based on the current theme and window state.
-
-        This method uses QDarkStyle for dark mode or reverts to native styling for light mode,
-        then appends custom CSS for rounded corners on the main container and title bar.
         """
         # Start with the base stylesheet.
         if self.dark_mode:
@@ -137,6 +152,31 @@ class MainWindow(QMainWindow):
                 "%TITLE_BAR_RADIUS%",
                 "border-top-left-radius: 10px; border-top-right-radius: 10px;"
             )
+        
+        # Add visible outline when not maximized
+        if not self._is_maximized:
+            border_color = "#555555" if self.dark_mode else "#999999"
+            # Apply border to mainContainer
+            css += f"""
+            #mainContainer {{
+                border: 1px solid {border_color};
+            }}
+            """
+            
+            # Add a more distinct styling for the content area
+            content_bg = "#262626" if self.dark_mode else "#fafafa"
+            content_border = "#444444" if self.dark_mode else "#cccccc"
+            css += f"""
+            QWidget#content {{
+                background-color: {content_bg};
+                border-left: 1px solid {content_border};
+                border-right: 1px solid {content_border};
+                border-bottom: 1px solid {content_border};
+                border-bottom-left-radius: 9px;
+                border-bottom-right-radius: 9px;
+                margin: 0px 1px 1px 1px;
+            }}
+            """
 
         # Instead of appending repeatedly, reset the style with base_css + custom CSS.
         full_css = base_css + css
@@ -157,9 +197,15 @@ class MainWindow(QMainWindow):
             f"background-color: transparent; color: {icon_color}; font-size: 14px; font-weight: bold;"
         )
 
-        # Update icon colors in the data browser as well.
+        # Update icon colors in other widgets as needed
         if hasattr(self, 'data_browser'):
             self.data_browser.update_icon_colors(self.dark_mode)
+        
+        if hasattr(self, 'home_widget'):
+            self.home_widget.update_icon_colors(self.dark_mode)
+        
+        if hasattr(self, 'setup_widget'):
+            self.setup_widget.update_icon_colors(self.dark_mode)
 
     # ========== Maximize / Restore ==========
     def toggle_maximize(self):

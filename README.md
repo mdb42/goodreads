@@ -1,6 +1,6 @@
 # Goodreads Analytics Tool
 
-A data exploration application for Goodreads book data. Analyze books, authors, users, reviews, and genres.
+A data exploration application for Goodreads book data. Analyze books, authors, users, reviews, and genres from the UCSD Book Graph dataset.
 
 ## Getting Started
 
@@ -9,15 +9,14 @@ A data exploration application for Goodreads book data. Analyze books, authors, 
 - Python 3.8+
 - PyQt6
 - SQLite3
-- Kaggle API credentials (for dataset download)
-- A dream and a prayer
+- 15+ GB of disk space for the full dataset
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/goodreads-analytics.git
-   cd goodreads-analytics
+   git clone https://github.com/mdb42/goodreads.git
+   cd goodreads
    ```
 
 2. Create and activate a virtual environment:
@@ -31,24 +30,21 @@ A data exploration application for Goodreads book data. Analyze books, authors, 
    pip install -r requirements.txt
    ```
 
-4. Set up your Kaggle credentials:
-   - Go to your Kaggle account settings
-   - Create an API token and download kaggle.json
-   - Place it in ~/.kaggle/ (Linux/Mac) or %USERPROFILE%\.kaggle\ (Windows)
-   - Set appropriate permissions (`chmod 600 ~/.kaggle/kaggle.json` on Linux/Mac)
-
 ### Running the Application
 
-1. Import the data (first-time setup):
-   ```bash
-   python main.py --rebuild-db
-   ```
-   This will download the Goodreads dataset and populate the database, assuming you have established Kaggle credentials.
-
-2. Launch the application:
+Launch the application:
    ```bash
    python main.py
    ```
+
+The first time you run the application, you'll need to download the dataset files and initialize the database. Follow the setup wizard to complete this process.
+
+## Features
+
+- **Setup Wizard**: Guides you through downloading and importing the dataset
+- **Data Browser**: Explore all database tables and relationships
+- **Search**: Filter data in any table
+- **Visualization**: Analyze relationships between books, authors, and reviews
 
 ## Database Schema
 
@@ -56,14 +52,15 @@ A data exploration application for Goodreads book data. Analyze books, authors, 
 erDiagram
     BOOK {
         int id PK
-        int external_id
+        string book_id
         string title
-        string subtitle
-        string publisher
-        date publication_date
-        string language
-        int pages
         string description
+        string isbn
+        string isbn13
+        string publisher
+        string publication_date
+        string language_code
+        int pages
         float average_rating
         int ratings_count
         int text_reviews_count
@@ -71,55 +68,53 @@ erDiagram
     
     AUTHOR {
         int id PK
+        string author_id
         string name
-        date birthdate
-        string country
-        float influence_score
-        string bio
+        string role
+        string profile_url
     }
     
     USER {
         int id PK
-        int external_id
+        string user_id
         string username
         int review_count
-        float avg_rating_given
-        string demographics
+        float rating_avg
+        float rating_stddev
     }
     
     REVIEW {
         int id PK
+        string review_id
         int book_id FK
         int user_id FK
         int rating
         string review_text
-        date review_date
-        int helpful_count
-        boolean spoiler_flag
+        string date_added
+        boolean is_spoiler
+        boolean has_sentiment
         float sentiment_score
+        float sentiment_magnitude
+        int helpful_votes
     }
     
     GENRE {
         int id PK
         string name
+        string description
+        int parent_id FK
+        int usage_count
     }
     
     BOOK_GENRE {
         int book_id PK,FK
         int genre_id PK,FK
+        int confidence_score
     }
     
     BOOK_AUTHORS {
         int book_id PK,FK
         int author_id PK,FK
-    }
-    
-    RATINGS_HISTORY {
-        int id PK
-        int book_id FK
-        date snapshot_date
-        int cum_ratings_count
-        float avg_rating
     }
     
     BOOK ||--o{ BOOK_AUTHORS : has
@@ -128,35 +123,50 @@ erDiagram
     GENRE ||--o{ BOOK_GENRE : contains
     BOOK ||--o{ REVIEW : receives
     USER ||--o{ REVIEW : writes
-    BOOK ||--o{ RATINGS_HISTORY : tracks
+    GENRE ||--o{ GENRE : parent_of
 ```
 
-## Current Data Gaps
+## Dataset Statistics
 
-I'm still missing quite a bit of data:
+Our database currently contains:
+- 2,360,655 books
+- 829,529 authors (with IDs only, names are placeholders)
+- 3,318,768 book-author relationships
+- 18,892 users
+- 1,330,981 reviews
+- 1,591,786 unique genres/shelves (user-defined tags)
+- 128,789,028 book-genre relationships
 
-- **Author table**: Only has names, missing birthdate, country, influence_score, and bio
-- **Book table**: Missing subtitle, publisher, publication_date, pages, description
-- **Review table**: Missing the actual review text (kind of important for sentiment analysis)
-- **User table**: Missing average rating and demographics
-- **Genre table**: Full of weird user tags that make little sense
+## Current Limitations
+
+- **Author Data**: The dataset only provides author IDs without names. We use placeholder names like "Author_123456" until real names can be retrieved.
+- **Interaction Data**: The interactions dataset is quite large (10+ GB) and may require additional system resources to process.
+- **Performance**: Some queries, especially across the book-genre relationships, may be slow due to the dataset size.
 
 ## Next Steps
 
-Ideas I'm contemplating:
-
-- Web crawling to fill in the missing data
-- Calculating a proper influence score for authors
-- Finding the single most negative reviewer on Goodreads (and analyzing their dark, bitter soul)
-- Figuring out why some people tag books with "100-bullets" and what that even means
-- Making pretty charts to justify all this work
+Planned enhancements:
+- Advanced analytics for finding trends in user behavior
+- Sentiment analysis of reviews
+- Finding the most negative reviewer on Goodreads
+- Genre clustering using machine learning
+- Visualization dashboards for key metrics
 
 ## License
 
-This project is licensed under the GNU General Public License due to PyQt6 requirements. See [LICENSE.md](LICENSE.md) for the legalese. TL;DR: You can use, modify, and distribute this software, but if you make changes, you need to share them under the same license.
+This project is licensed under the GNU General Public License due to PyQt6 requirements.
 
 ## Acknowledgments
 
-- My CPU, for not melting
-- The Goodreads community, for their questionable tagging system
-- Caffeine, the true hero of this project
+- [UCSD Book Graph Dataset](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home) for providing the rich dataset
+- Julian McAuley and the UCSD research team for creating the dataset
+- PyQt6 for the UI framework
+
+## Citation
+
+If you use this tool or the underlying dataset for research, please cite:
+```
+Mengting Wan, Julian McAuley, "Item Recommendation on Monotonic Behavior Chains", in RecSys'18.
+
+Mengting Wan, Rishabh Misra, Ndapa Nakashole, Julian McAuley, "Fine-Grained Spoiler Detection from Large-Scale Review Corpora", in ACL'19.
+```
