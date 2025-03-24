@@ -24,19 +24,19 @@ DATASET_INFO = {
     "files": {
         "books": {
             "filename": "goodreads_books.json.gz",
-            "url": "https://datarepo.eng.ucsd.edu/mcauley_group/gdrive/goodreads/goodreads_books.json.gz",
+            "url": "https://mcauleylab.ucsd.edu/public_datasets/gdrive/goodreads/goodreads_books.json.gz",
             "size_mb": 1983,  # ~1.94 GB
             "md5": "75f2f23cedf111b926910614506a58b6"
         },
         "reviews": {
             "filename": "goodreads_reviews_spoiler.json.gz",
-            "url": "https://datarepo.eng.ucsd.edu/mcauley_group/gdrive/goodreads/goodreads_reviews_spoiler.json.gz",
+            "url": "https://mcauleylab.ucsd.edu/public_datasets/gdrive/goodreads/goodreads_reviews_spoiler.json.gz",
             "size_mb": 592,   # ~592 MB
             "md5": "b7dafdf4ad25a9eb797f4f39608e5a0e"
         },
         "interactions": {
             "filename": "goodreads_interactions.json.gz",
-            "url": "https://datarepo.eng.ucsd.edu/mcauley_group/gdrive/goodreads/goodreads_interactions_dedup.json.gz",
+            "url": "https://mcauleylab.ucsd.edu/public_datasets/gdrive/goodreads/goodreads_interactions_dedup.json.gz",
             "size_mb": 10928, # ~10.68 GB
             "md5": "1cd3716e4088ffa9b785f603b398c843"
         }
