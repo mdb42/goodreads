@@ -1,5 +1,3 @@
 PyQt6
 qdarkstyle
 qtawesome
-pandas
-ijson
