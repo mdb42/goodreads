@@ -1,0 +1,71 @@
+\documentclass[journal,12pt,onecolumn,draftcls]{IEEEtran}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{hyperref}
+\hypersetup{
+      colorlinks=true,
+      linkcolor=blue,
+      citecolor=black,      
+      urlcolor=blue
+}
+
+\doublespacing
+
+\begin{document}
+\title{Goodreads Sentiment Analysis}
+\author{\IEEEauthorblockN{Matthew D. Branson, James R. Brown} \\
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Missouri State University}\\
+Springfield, USA \\
+branson773@live.missouristate.edu}
+}
+\maketitle
+\begin{abstract}
+This project explores sentiment analysis using the UCSD Goodreads Book Graph datasets. We examine book reviews and the users who wrote them, focusing on predicting star ratings from review text and analyzing cross-domain adaptation of sentiment classifiers. Additional dimensions of analysis include review categorization, genre-specific sentiment patterns, and the development of a parametric search interface for the extensive dataset.
+\end{abstract}
+
+\begin{IEEEkeywords}
+sentiment analysis, natural language processing, Goodreads, domain adaptation, classification, information retrieval
+\end{IEEEkeywords}
+
+\section{Project Description}
+\label{sec:description}
+
+Using the UCSD Goodreads Book Graph datasets, we propose to examine book reviews and the users who wrote them. The dataset contains information about 2,360,655 books (1,521,962 works, 400,390 book series, 829,529 authors); 876,145 users; 228,648,342 user-book interactions in users' shelves (including 112,131,203 reads and 104,551,549 ratings). We are currently in an exploratory analysis phase, using a PyQt6 application for dataset downloading and normalization into a SQL database. Our preparation can be observed at \href{https://github.com/mdb42/goodreads}{https://github.com/mdb42/goodreads}.
+
+\section{Project Objectives}
+\label{sec:objectives}
+
+We intend to perform the following:
+
+\begin{itemize}
+    \item Build a sentiment classifier, predicting star ratings given a body of review text.
+    
+    \item Analyze the effectiveness of the sentiment classifier not just on validation sets of Goodreads reviews, but also as a case study in domain adaptation when applied to movie reviews.
+    
+    \item Build other classifiers for multiple dimensions of reviews and reviewers themselves, examining features such as intensity, focus, constructiveness, subjectivity, and consistency.
+    
+    \item Perform clustering analysis from user-generated shelving descriptions to define formal categories for genre, performing then genre-specific sentiment analysis.
+    
+    \item Build a parametric search interface for the entire dataset, though this would rely more on SQLite indexing than any custom method in memory, simply for sake of the sheer immensity of the collection.
+\end{itemize}
+
+\section{Literature Review}
+\label{sec:lit_rev}
+
+Our project primarily builds upon the work of Wan et al., the curators of the UCSD Goodreads dataset. In their first paper, Wan and McAuley \cite{wan2018} introduce chainRec, a recommendation system that models user interactions as sequences of increasingly committed behaviors. This paper is significant to our work not only for the comprehensive Goodreads dataset it provides—comprising over 225 million user-item interactions—but also for its conceptual framework of viewing user engagement as structured sequences rather than independent events. The authors specifically request citation of this work when using their dataset.
+
+In a follow-up study, Wan et al. \cite{wan2019} develop SpoilerNet, a neural model trained on 1.4 million Goodreads reviews to detect spoilers at the sentence level. This research demonstrates that users exhibit stable, quantifiable patterns in their reviewing behavior, offering a methodological precedent for our user-level sentiment analysis. The authors specifically request citation of this work when using their dataset.
+
+For sentiment analysis methodology, Monika and Chooralil \cite{monika2023} offer a comprehensive survey of techniques, providing a systematic framework for the analytical pipeline from data collection through interpretation.
+
+Reagle \cite{reagle2015} examines online comment culture across platforms, developing a taxonomy of commenting behaviors with six functions: informing, improving, manipulating, alienating, shaping identity, and perplexing. While not focused specifically on literary reviewing, Reagle's typology offers a valuable framework for categorizing reviewers and understanding how digital environments may amplify certain reviewing behaviors.
+
+ \bibliographystyle{IEEEtran} 
+ \bibliography{refs}
+
+\end{document}

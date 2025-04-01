@@ -9,7 +9,6 @@ config.json
 kaggle.json
 test.css
 logs/
-*.log
 data/
 ucsd-book-graph/
 analytics.db

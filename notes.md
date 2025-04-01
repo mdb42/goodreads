@@ -105,3 +105,7 @@
    - "If you find this reviewer insightful, you might also like..." functionality
    - Bookmark feature to save interesting reviewer profiles
    - Export options for similarity data
+
+---
+
+Our Book Review Sentiment Analysis system implements a multi-dimensional approach to characterize reviewer behavior beyond basic positive/negative classification. We'll analyze dimensions including intensity, focus areas of criticism, constructiveness, subjectivity, and consistency with numerical ratings. Using supervised learning with star ratings as ground truth, we'll train models to identify distinctive reviewer archetypes. By applying clustering algorithms to group reviewers based on their criticism patterns and calculating similarity measures between critics using modified TF-IDF techniques, we can identify and analyze outliers such as extremely negative reviewers. This approach provides deeper insights into reviewer behavior patterns and enables identification of influential critics across the Goodreads ecosystem.
