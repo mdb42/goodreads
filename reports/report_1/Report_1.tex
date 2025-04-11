@@ -1,0 +1,62 @@
+% !TeX program = pdflatex -synctex=1 -interaction=nonstopmode %.tex
+
+\documentclass[journal,12pt,onecolumn,draftcls]{IEEEtran}
+\usepackage{mathtools,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{subfiles}
+\usepackage{hyperref}
+
+\doublespacing
+
+\title{Goodreads Report 1}
+\author{
+	\IEEEauthorblockN{Matthew D. Branson, James R. Brown} \\
+	\IEEEauthorblockA{\textit{Department of Computer Science} \\
+	\textit{Missouri State University}\\
+		Springfield, USA \\
+		branson773@live.missouristate.edu
+	}
+}
+
+\begin{document}
+
+	\maketitle
+	
+	\begin{abstract}
+		\subfile{sections/abstract}
+	\end{abstract}
+	
+	\begin{IEEEkeywords}
+		sentiment analysis, natural language processing, Goodreads, domain adaptation, classification, information retrieval
+	\end{IEEEkeywords}
+	
+	\section{Project Description}
+		\label{sec:description}
+	
+		\subfile{sections/description}
+	
+	\section{Literature Review}
+		\label{sec:lit_rev}
+		
+		\subfile{sections/lit_review}
+		
+	\section{Background}
+		\label{sec:background}
+		
+		\subfile{sections/background}
+		
+	\section{Methods}
+		\label{sec:methods}
+		
+		\subfile{sections/methods}
+		
+	\section{Task Assignments}
+		\label{sec:task_assignments}
+		
+		\subfile{sections/task_assignments}
+	
+\end{document}
