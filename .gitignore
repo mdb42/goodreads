@@ -13,3 +13,10 @@ data/
 ucsd-book-graph/
 analytics.db
 hidden/
+
+# LaTeX-specific exclusions
+*.aux
+*.blg
+*.out
+*.synctex.gz
+*.fdb_latexmk
