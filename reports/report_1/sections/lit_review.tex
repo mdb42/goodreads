@@ -1,0 +1,55 @@
+% Use in social media
+Sentiment analysis has been used in machine learning and deep learning contexts for a variety of applications.
+Chandra and Jana have found that sentiment analysis can be an effective tool when assessing the general public's
+feelings about products and topics on social media \cite{chandra2020}. Going beyond machine learning, it seems
+that using deep learning could lead to more accurate analysis, which presents an interesting area to extend
+this project into in the future. Additionally, given the social media-like nature of Goodreads, it will be
+interesting to see if sentiment analysis is just as effective for Goodreads as it has for Twitter, despite
+differences in approach.
+
+% Use in detecting emotions in the plot of a novel
+Tangential to Goodreads, sentiment analysis seems to have some interesting use cases when determining structure of
+a novel, particularly novels that may not use a traditional plot structure. Elkins and Chun found that sentiment
+analysis when paired with manual close reading can result in new critiques of literature \cite{Elkins2019}. Despite
+some issues in the \texttt{Syuzhet.R} library used for sentiment analysis, the researchers still found interesting
+new insights and emotional arcs in the novel that may be missed by other readers. However, it was noted that the
+library used struggled with properly assigning sentimental scores to certain kinds of grammar, like negation,
+capitalization, and even emojis. Since we're expecting a much more informal style of writing in Goodreads
+reviews, we'll have to monitor how our approach handles situations where excessive punctuation, emojis, and
+incorrect spelling/grammar are present.
+
+% More use in social media; pitfall of analyzing more in-depth approaches
+Beyond emotional analysis, sentiment analysis could be used to gain insights on those participating in the
+conversation(s), too. Sokolova and Bobicev attempted to use sentiment analysis on medical forums to evaluate
+the presence of the ``echo chamber effect'' in those forums \cite{Sokolova2020}. However, the authors had some
+difficulty finding properly-labeled data to train their model effectively to make these sorts of analyses.
+While Goodreads reviews often come with a star rating that can be used as a label, great care needs to be
+taken in what kinds of conclusions can be drawn from our approach beyond predicting a star rating.
+
+% Flexibility of sentiment analysis; ASSUMES THAT APPLICATION TO MOVIE REVIEWS IS STILL POSSIBLY HAPPENING
+Given that data availability can be an issue in just about any application where a sentiment analyzer may
+be used, some researchers have been looking in to making more general-purpose models to improve performance
+when used in subjects unrelated to the model's test set. SentiX, a cross-domain sentiment analysis model, was
+proposed by Zhou et. al. to be used on several domains of user reviews without the need for fine-tuning the model
+along the way \cite{Zhou2020}. This model beats most BERT-based models and several other models (excluding the domain that other
+models were trained on) while being trained on less samples than other models. This experiment seems \textit{far} more
+complex than ours will be, demonstrating the difficulty in constructing such a model while avoiding overfitting
+on the domain that the model is trained on.
+
+% Naive Bayes performance
+That being said, Na\"ive Bayes still seems to be a valid framework to build a sentiment analysis model around for
+internet user reviews. Quadri and Selvakumar used Na\"ive Bayes to develop a model that analyzes cross-domain
+reviews, achieving an accuracy range of 76\% to 99\% against a set of different domains and review websites 
+\cite{Quadri2020}. It is noted that the results could be better if the model used other variants of Na\"ive Bayes
+for certain domains over others (Multinomial and Bernoulli specifically), but the results achieved here seem to make
+a promising case for the effectiveness of our approach in both the trained Goodreads domain and a different
+``target'' domain.
+
+% Importance of feature selection
+Feature selection is another important component in developing a sentiment analysis model. These are used to make
+sure the model is getting relevant information from any given review to give it the best chance to make the correct
+prediction on the sentiment of the review. Several sentiment analysis models used in other published journals use
+feature selection methods that information retrieval systems tend to lean on, like document frequency, chi-squared ($\mathcal{X}^2$),
+odds ratio, and clustering \cite{Hung2015}. While a classifier like Na\"ive Bayes is the decision maker of the model, feature selection
+reduces the amount of input to a more reasonable amount, ideally improving performance of the model and resulting
+in a more accurate model overall.
