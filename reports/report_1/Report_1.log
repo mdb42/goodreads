@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.4.4)  11 APR 2025 10:42
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.4.4)  14 APR 2025 00:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -435,7 +435,7 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count310
 \l__pdf_internal_box=\box59
 )
-(./Report_1.aux)
+No file Report_1.aux.
 \openout1 = `Report_1.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 25.
@@ -456,7 +456,6 @@ LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 25.
 LaTeX Font Info:    ... okay on input line 25.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 25.
 LaTeX Font Info:    ... okay on input line 25.
-
 -- Lines per column: 29 (approximate, difference = 2.2278pt).
 (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -481,15 +480,13 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 Package hyperref Info: Link coloring OFF on input line 25.
-
-(./Report_1.out) (./Report_1.out)
 \@outlinefile=\write3
 \openout3 = `Report_1.out'.
 
- (./sections/abstract.tex)
-(./sections/description.tex) (./sections/lit_review.tex)
-(./sections/background.tex) (./sections/methods.tex)
-(./sections/task_assignments.tex)
+
+(./sections/abstract.tex) (./sections/description.tex)
+(./sections/lit_review.tex) (./sections/background.tex) (./sections/methods.tex
+) (./sections/task_assignments.tex)
 
 [1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
 ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}] (./Report_1.aux)
@@ -497,24 +494,34 @@ ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}] (./Report_1.aux)
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-Package rerunfilecheck Info: File `Report_1.out' has not changed.
-(rerunfilecheck)             Checksum: 73933F21F51E2F5E21E4342B79B8308C;569.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+
+Package rerunfilecheck Warning: File `Report_1.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `Report_1.out':
+(rerunfilecheck)             Before: <no file>
+(rerunfilecheck)             After:  73933F21F51E2F5E21E4342B79B8308C;569.
  ) 
 Here is how much of TeX's memory you used:
- 11964 strings out of 473190
- 188797 string characters out of 5715807
- 594263 words of memory out of 5000000
- 35055 multiletter control sequences out of 15000+600000
+ 11949 strings out of 473190
+ 188596 string characters out of 5715807
+ 595967 words of memory out of 5000000
+ 35046 multiletter control sequences out of 15000+600000
  587157 words of font info for 81 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,6n,79p,265b,439s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/lo
 cal/texlive/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texliv
 e/2025/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on Report_1.pdf (1 page, 38376 bytes).
+Output written on Report_1.pdf (1 page, 40576 bytes).
 PDF statistics:
- 52 PDF objects out of 1000 (max. 8388607)
- 42 compressed objects within 1 object stream
+ 37 PDF objects out of 1000 (max. 8388607)
+ 27 compressed objects within 1 object stream
  7 named destinations out of 1000 (max. 500000)
- 41 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
