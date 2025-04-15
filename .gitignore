@@ -18,7 +18,10 @@ hidden/
 *.aux
 *.blg
 *.out
+*.log
+*.bbl
 *.synctex.gz
 *.fdb_latexmk
+*.fls
 Report_1.log
 Report_1.fls

@@ -4,31 +4,29 @@ This project will use the UCSD Book Graph dataset, which includes over 2.3 milli
 To support scalable document processing and analysis, we will adapt an existing modular indexing framework built for information retrieval tasks. Index construction will be performed using either the \texttt{StandardIndex} or \texttt{ParallelIndex} class, selected dynamically based on dataset size and available system resources. These indexers tokenize, stem, and filter review text, storing normalized term frequencies per document. Multiprocessing support will enable distributed indexing when appropriate, with fallback to sequential processing if necessary.
 
 \subsection{Feature Extraction}
-We will extract both document-level and user-level features to support classification and clustering. Review text will be preprocessed using NLTK’s \texttt{word\_tokenize}, with custom logic to retain negation terms (e.g., \textit{not}, \textit{never}) and filter out non-informative stopwords. Tokens will be lowercased and stemmed using Porter’s algorithm. Term frequency–inverse document frequency (TF-IDF) vectors will be constructed using a filtered vocabulary with document frequency thresholds between 5 and 85\%. Both unigrams and bigrams will be included in the final term space.
+We will extract both document-level and user-level features to support classification and clustering. Review text will be preprocessed using NLTK’s \texttt{word\_tokenize}, with custom logic to retain negation terms (e.g., \textit{not}, \textit{never}) and filter out non-informative stopwords. Tokens will be lowercased and stemmed using Porter’s algorithm. Term frequency–inverse document frequency (\textit{tf-idf}) vectors will be constructed using a filtered vocabulary with document frequency thresholds between 5 and 85\%. Both unigrams and bigrams will be included in the final term space.
 
 For user-level feature extraction, we will aggregate document vectors to create per-user representations. These feature vectors will include:
 \begin{itemize}
   \item Mean rating across all reviews authored by the user
   \item Rating variance and review count
   \item Average sentiment score (derived from external model predictions)
-  \item Mean TF-IDF vector across the user’s reviews
+  \item Mean \textit{tf-idf} vector across the user’s reviews
 \end{itemize}
 
 These features will be used as inputs to both supervised and unsupervised modeling. Scalar attributes will be standardized to unit variance, and all sparse vectors will be L2-normalized to ensure compatibility with cosine-based similarity metrics.
 
 \subsection{Modeling Framework}
-We will integrate two modeling approaches using the existing retrieval infrastructure: (1) supervised sentiment classification using Naive Bayes, and (2) unsupervised clustering using K-means. The modeling layer is implemented on top of a shared vector space model (VSM) abstraction that supports multiple weighting schemes and backends. Three concrete VSM implementations are available—standard, parallel, and sparse—each compatible with the same indexing interface. These models are selected dynamically using a factory pattern, enabling flexible experimentation without duplicating preprocessing logic.
+We will integrate two modeling approaches using the existing retrieval infrastructure: (1) supervised sentiment classification using Na\"ive Bayes, and (2) unsupervised clustering using K-means. The modeling layer is implemented on top of a shared vector space model (VSM) abstraction that supports multiple weighting schemes and backends. Three concrete VSM implementations are available—standard, parallel, and sparse—each compatible with the same indexing interface. These models are selected dynamically using a factory pattern, enabling flexible experimentation without duplicating preprocessing logic.
 
-\subsubsection{Sentiment Classification with Naive Bayes}
-To predict user star ratings based on review text, we will train a Multinomial Naive Bayes classifier. TF-IDF vectors computed during indexing will serve as the input feature space. Class priors and likelihoods will be estimated from the training set, and Laplace smoothing (\( \alpha = 0.3 \)) will be applied to account for unseen terms. The conditional probability of a rating class \( c \) given a document \( d \) will be computed as:
-
+\subsubsection{Sentiment Classification with Na\"ive Bayes}
+To predict user star ratings based on review text, we will train a Multinomial Na\"ive Bayes classifier. \textit{tf-idf} vectors computed during indexing will serve as the input feature space. Class priors and likelihoods will be estimated from the training set, and Laplace smoothing (\( \alpha = 0.3 \)) will be applied to account for unseen terms. The conditional probability of a rating class \( c \) given a document \( d \) will be computed as:
 \[
 P(c \mid d) \propto P(c) \prod_{i=1}^{n} P(t_i \mid c)^{f_{i,d}},
 \]
-
 where \( f_{i,d} \) denotes the frequency of token \( t_i \) in document \( d \). Evaluation will be conducted using five-fold cross-validation, and we will report accuracy and F1-scores across all five rating categories. Comparative testing with support vector machines and logistic regression will be used to evaluate model performance on both extreme and ambiguous reviews.
 
 \subsubsection{Reviewer Clustering with K-means}
-To identify latent reviewer archetypes, we will apply K-means clustering to the aggregated user feature vectors. Each user will be represented by a hybrid vector comprising behavioral features (e.g., mean rating, review frequency) and semantic features derived from TF-IDF vectors of their authored reviews. All features will be standardized to ensure compatibility with the Euclidean distance metric used by K-means.
+To identify latent reviewer archetypes, we will apply K-means clustering to the aggregated user feature vectors. Each user will be represented by a hybrid vector comprising behavioral features (e.g., mean rating, review frequency) and semantic features derived from \textit{tf-idf} vectors of their authored reviews. All features will be standardized to ensure compatibility with the Euclidean distance metric used by K-means.
 
 Clustering will be performed over a range of \( k \) values from 2 to 10. Optimal cluster count will be selected using the elbow method and silhouette score analysis. Post-hoc interpretation will rely on cluster centroids and representative users, with an eye toward identifying groups such as critical reviewers, casual enthusiasts, or sentiment-divergent users. Future work may involve experimenting with alternative clustering algorithms or dimensionality reduction techniques to improve interpretability and stability of the clusters.

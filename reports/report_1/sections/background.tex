@@ -1,7 +1,12 @@
 To construct the sentiment analyzer, we'll be using a Na\"ive Bayes classifier to make decisions on
 the sentiment ``rating'' of a review. This classifier will be fed information
 from a feature extraction pipeline using \textit{tf-idf} over tokenized and stemmed
-reviews. From these, we're looking to have the model generate an average sentiment
+reviews. Otherwise known as term frequency-inverse document frequency, this feature
+extraction method helps determine how ``important'' a word is to any given review. From these, we're looking to have the model generate an average sentiment
 score on a scale from 1 through 5, matching up with the five-star review score that
 users can give a book on Goodreads. After this, these reviews can be clustered by
-sentiment score.
+sentiment score, which will provide us with a way to group individual reviewers based on that score, review frequency, and other behavioral metrics.
+
+Once the model has been trained on the Goodreads dataset, we'll proceed with applying
+the model to a set of movie reviews and examine how effective the model is in
+cross-domain applications.
