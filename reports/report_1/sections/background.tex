@@ -1,0 +1,7 @@
+To construct the sentiment analyzer, we'll be using a Na\"ive Bayes classifier to make decisions on
+the sentiment ``rating'' of a review. This classifier will be fed information
+from a feature extraction pipeline using \textit{tf-idf} over tokenized and stemmed
+reviews. From these, we're looking to have the model generate an average sentiment
+score on a scale from 1 through 5, matching up with the five-star review score that
+users can give a book on Goodreads. After this, these reviews can be clustered by
+sentiment score.
