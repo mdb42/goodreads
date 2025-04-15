@@ -417,34 +417,38 @@ class DatasetImporter:
                     internal_user_id = user_id_map[user_id]
                     internal_book_id = book_id_map[book_id]
                     review_id = review.get('review_id')
-                    review_text = review.get('review_text', '')
-                    date_added = review.get('date_added')
 
-                    spoiler_flag = 1 if review.get('is_spoiler', False) else 0
+                    review_sentences_list = review.get('review_sentences', [])
+                    # Combine the second element (the sentence string) from each sublist
+                    review_text = " ".join([sentence_data[1] for sentence_data in review_sentences_list if isinstance(sentence_data, list) and len(sentence_data) > 1])
+
+                    date_added = review.get('date_added') # Note: The example JSON uses 'timestamp', you might need review.get('timestamp')
+
+                    # Check if date_added is None or needs conversion if using timestamp
+                    if not date_added:
+                        date_added = review.get('timestamp') # Fallback to timestamp if date_added missing
+
+                    # Simplified spoiler flag processing based on example record
+                    spoiler_flag = 1 if review.get('has_spoiler', False) else 0
+
+                    # Sentiment processing remains the same
                     has_sentiment = 0
                     sentiment_score = None
                     sentiment_magnitude = None
 
-                    if 'sentiment' in review:
-                        has_sentiment = 1
-                        if isinstance(review['sentiment'], dict):
-                            sentiment_score = review['sentiment'].get('value')
-                            sentiment_magnitude = review['sentiment'].get('magnitude')
-                        else:
-                            sentiment_score = review['sentiment']
-
+                    # Append the record - ensure tuple order matches INSERT statement below
                     review_records.append((
                         review_id,
                         internal_book_id,
                         internal_user_id,
                         rating,
-                        review_text,
+                        review_text, # Uses the newly constructed review_text
                         date_added,
                         spoiler_flag,
                         has_sentiment,
                         sentiment_score,
                         sentiment_magnitude,
-                        0  # helpful_votes
+                        0  # helpful_votes - Assuming 0 as it's not in example JSON
                     ))
                 except Exception as e:
                     logger.debug(f"Error processing review: {e}")
@@ -456,9 +460,9 @@ class DatasetImporter:
                 try:
                     self.db.executemany(
                         """INSERT OR IGNORE INTO review
-                           (review_id, book_id, user_id, rating, review_text, date_added,
+                            (review_id, book_id, user_id, rating, review_text, date_added,
                             is_spoiler, has_sentiment, sentiment_score, sentiment_magnitude, helpful_votes)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         review_records
                     )
                     self.db.commit()

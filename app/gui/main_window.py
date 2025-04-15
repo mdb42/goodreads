@@ -3,8 +3,8 @@ import json
 
 from app.gui.title_bar import TitleBar
 from app.gui.setup.setup_widget import SetupWidget
-from app.gui.home_widget import HomeWidget
-from app.gui.data_browser import DataBrowser
+from app.gui.search_widget import ParametricSearchWidget
+from app.gui.results_widget import ResultsWidget
 import qdarkstyle
 import qtawesome as qta
 
@@ -66,11 +66,16 @@ class MainWindow(QMainWindow):
         
         # Create setup and home widgets (to be implemented)
         self.setup_widget = SetupWidget(self.engine, self)
-        self.home_widget = DataBrowser(self.config["data"]["database"], self)
+        self.search_widget = ParametricSearchWidget(self.engine, self)
+        self.results_widget = ResultsWidget(self.engine, self)
+        
+        self.search_widget.search_requested.connect(self.handle_search)
+        self.results_widget.back_to_search_requested.connect(self.show_search_interface)
         
         # Add widgets to the stack
         self.stacked_widget.addWidget(self.setup_widget)  # Index 0: Setup
-        self.stacked_widget.addWidget(self.home_widget)   # Index 1: Home/Main
+        self.stacked_widget.addWidget(self.search_widget)  # Index 1: Search
+        self.stacked_widget.addWidget(self.results_widget)  # Index 2: Results
         
         # Add stacked widget to the layout
         content_layout.addWidget(self.stacked_widget)
@@ -102,6 +107,10 @@ class MainWindow(QMainWindow):
         """
         self.stacked_widget.setCurrentIndex(1)
         self.status_bar.showMessage("Ready")
+
+    def show_search_interface(self):
+        """Switch to the search interface."""
+        self.stacked_widget.setCurrentIndex(1)
 
     # ========== Theming / Style ==========
     def toggle_theme(self):
@@ -411,6 +420,31 @@ class MainWindow(QMainWindow):
         with open("config.json", "w") as f:
             json.dump(self.config, indent=4, fp=f)
         event.accept()
+
+    def handle_search(self, params):
+        """Handle search requests from the search widget."""
+        try:
+            self.status_bar.showMessage("Searching...")
+            
+            # Call the engine to perform the search
+            results = self.engine.find_negative_reviewers_sql(
+                min_reviews=params.get('min_reviews', 20),
+                max_avg_rating=params.get('max_avg_rating', 2.0),
+                keywords=params.get('keywords', []),
+                genre=params.get('genre', None)
+            )
+            
+            # Update the results widget with the found data
+            self.results_widget.handle_search_results(results)
+            
+            # Switch to the results widget
+            self.stacked_widget.setCurrentIndex(2)  # Show results
+            
+            self.status_bar.showMessage(f"Found {len(results)} negative reviewers")
+        except Exception as e:
+            self.status_bar.showMessage(f"Search error: {e}")
+            # Log the full error details
+            self.engine.logger.error(f"Search error: {e}", exc_info=True)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
