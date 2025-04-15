@@ -21,3 +21,4 @@ hidden/
 *.synctex.gz
 *.fdb_latexmk
 Report_1.log
+Report_1.fls
