@@ -9,7 +9,7 @@ import gzip
 from pathlib import Path
 from typing import Dict, List, Optional, Callable, Iterator
 
-from app.db.downloader import DATASET_INFO, FileDownloader  # or adjust import path as needed
+from db.downloader import DATASET_INFO, FileDownloader  # or adjust import path as needed
 
 logger = logging.getLogger(__name__)
 

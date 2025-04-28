@@ -1,10 +1,10 @@
 import sys
 import json
 
-from app.gui.title_bar import TitleBar
-from app.gui.setup.setup_widget import SetupWidget
-from app.gui.search_widget import ParametricSearchWidget
-from app.gui.results_widget import ResultsWidget
+from gui.title_bar import TitleBar
+from gui.setup.setup_widget import SetupWidget
+from gui.search_widget import ParametricSearchWidget
+from gui.results_widget import ResultsWidget
 import qdarkstyle
 import qtawesome as qta
 

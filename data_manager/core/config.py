@@ -6,7 +6,7 @@ import logging
 # Default configuration
 DEFAULT_CONFIG = {
     "application": {
-        "name": "Goodreads Analytics", 
+        "name": "Goodreads Dataset Manager", 
         "version": "0.1.0"
     },
     "logging": {
@@ -25,7 +25,7 @@ DEFAULT_CONFIG = {
     }        
 }
 
-def load_config(config_path="config.json"):
+def load_config(config_path="data_manager/config.json"):
     """
     Load application configuration from a JSON file.
     If file doesn't exist, create it with default configuration.

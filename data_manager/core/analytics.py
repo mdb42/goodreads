@@ -8,8 +8,8 @@ import gzip
 from collections import Counter, defaultdict
 from PyQt6.QtCore import pyqtSignal
 
-from app.gui.main_window import MainWindow
-from app.db.database import Database
+from gui.main_window import MainWindow
+from db.database import Database
 
 class AppState(Enum):
     """Application state enumeration for managing transitions."""

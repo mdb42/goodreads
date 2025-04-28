@@ -1,0 +1,10 @@
+To construct the sentiment analyzer, we will be using a Na\"ive Bayes classifier to make decisions on the sentiment ``rating'' of a review. This classifier will be fed information
+from a feature extraction pipeline using \textit{tf-idf} over tokenized and stemmed
+reviews. This feature extraction method helps determine how ``important'' a word is to any given 
+review. From these, we are looking to predict a star rating on a discrete 1--5 scale, matching
+Goodreads’ review system. After this, we will cluster reviewers based on their aggregate sentiment 
+scores, review frequency, and other behavioral metrics.
+
+Once the model has been trained on the Goodreads dataset, we will proceed with applying
+the model to a set of movie reviews and examine how effective the model is in
+cross-domain applications.

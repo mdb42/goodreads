@@ -148,20 +148,20 @@ class Database:
         """
         Get a FileDownloader instance (for dataset checks & downloads).
         """
-        from app.db.downloader import FileDownloader
+        from db.downloader import FileDownloader
         return FileDownloader(self.config)
 
     def get_dataset_importer(self):
         """
         Get a DatasetImporter instance (for importing data into this database).
         """
-        from app.db.importer import DatasetImporter
+        from db.importer import DatasetImporter
         return DatasetImporter(self.config, self)
 
     def initialize_schema(self):
         """Initialize the database schema with tables and initial data."""
         try:
-            from app.db.models import initialize_database
+            from db.models import initialize_database
             success = initialize_database(self)
             if success:
                 self.logger.info("Database schema initialized successfully")

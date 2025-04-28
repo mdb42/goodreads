@@ -6,12 +6,12 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QTimer, pyqtSignal
 from pathlib import Path
 import logging
-from app.gui.setup.setup_header_widget import SetupHeaderWidget
-from app.gui.setup.setup_files_widget import SetupFilesWidget
-from app.gui.setup.setup_progress_widget import SetupProgressWidget
-from app.gui.setup.setup_actions_widget import SetupActionsWidget
-from app.gui.setup.setup_footer_widget import SetupFooterWidget
-from app.gui.setup.setup_worker import SetupWorker
+from gui.setup.setup_header_widget import SetupHeaderWidget
+from gui.setup.setup_files_widget import SetupFilesWidget
+from gui.setup.setup_progress_widget import SetupProgressWidget
+from gui.setup.setup_actions_widget import SetupActionsWidget
+from gui.setup.setup_footer_widget import SetupFooterWidget
+from gui.setup.setup_worker import SetupWorker
 
 logger = logging.getLogger(__name__)
 

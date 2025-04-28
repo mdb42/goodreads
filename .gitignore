@@ -12,7 +12,7 @@ logs/
 data/
 ucsd-book-graph/
 analytics.db
-hidden/
+_hidden/
 
 # LaTeX-specific exclusions
 *.aux
@@ -25,3 +25,8 @@ hidden/
 *.fls
 Report_1.log
 Report_1.fls
+
+outputs/
+datasets/
+indexes/
+models/
