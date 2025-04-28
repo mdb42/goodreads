@@ -1,11 +1,20 @@
 # src/index/base.py
 """
-Base Document Index Interface
-Author: Matthew Branson
-Date: March 14, 2025
+CSC790 Information Retrieval - Final Project
+Goodreads Sentiment Analysis and Information Retrieval System
+
+Module: base.py
 
 This module defines the abstract base class for all document index implementations.
 It establishes the common interface that concrete index implementations must provide.
+
+Authors:
+    Matthew D. Branson (branson773@live.missouristate.edu)
+    James R. Brown (brown926@live.missouristate.edu)
+
+Missouri State University
+Department of Computer Science
+May 1, 2025
 """
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Any, Optional

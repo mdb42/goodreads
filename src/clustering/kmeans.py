@@ -5,9 +5,7 @@ import random
 from typing import List, Dict, Tuple
 
 class KMeans:
-    """
-    K-means clustering implementation based on IR-7.6 course materials.
-    """
+    # TODO: Implement this for real. This is just a rough sketch.
     
     def __init__(self, k=5, max_iter=100, tol=1e-4):
         """
@@ -133,7 +131,7 @@ class KMeans:
             
             # Calculate additional stats if metadata available
             if user_metadata:
-                # [Calculate average ratings, review counts, etc.]
+                # TODO: Calulate average ratings, review counts, etc. based on user_metadata
                 pass
                 
             stats[cluster_id] = cluster_data

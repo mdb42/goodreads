@@ -4,17 +4,7 @@ import numpy as np
 from collections import defaultdict, Counter
 
 def mutual_information(index, doc_labels, k=1000):
-    """
-    Select top k features using Mutual Information.
-    
-    Args:
-        index: Document index with term frequencies
-        doc_labels: Dict mapping doc_ids to class labels
-        k: Number of features to select
-        
-    Returns:
-        Set of selected feature names
-    """
+    # TODO: Implment this for real. This is just a rough sketch.
     classes = set(doc_labels.values())
     vocab = set(index.term_doc_freqs.keys())
     
@@ -69,19 +59,9 @@ def mutual_information(index, doc_labels, k=1000):
     return {term for term, _ in selected_terms}
 
 def chi_square(index, doc_labels, k=1000):
-    """
-    Select top k features using Chi-Square test.
-    
-    [Implementation based on course materials]
-    """
-    # Similar implementation based on the chi-square formula from your slides
+    # TODO: Implement Chi-Square feature selection
     pass
 
 def frequency_based(index, doc_labels, k=1000):
-    """
-    Select top k features based on simple document frequency.
-    
-    [Implementation based on course materials]
-    """
-    # Simpler frequency-based selection
+    # TODO: Implement frequency-based feature selection
     pass

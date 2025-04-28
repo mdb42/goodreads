@@ -1,25 +1,49 @@
-# src/utils/bootstrap.py
+#!/usr/bin/env python3
+"""
+CSC790 Information Retrieval - Final Project
+Goodreads Sentiment Analysis and Information Retrieval System
+
+Module: bootstrap.py
+
+This module provides bootstrap functionality for the Goodreads IR system,
+handling configuration management, directory initialization, and dataset 
+verification. It ensures all required resources are available before the
+system starts.
+
+Authors:
+    Matthew D. Branson (branson773@live.missouristate.edu)
+    James R. Brown (brown926@live.missouristate.edu)
+
+Missouri State University
+Department of Computer Science
+May 1, 2025
+"""
 
 import os
 import json
 import urllib.request
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Any
 
+# Define a type alias for the logger to avoid circular imports
+# This allows us to type-hint without importing the actual Logger class
+LoggerType = Any
+
+# Default configuration with dataset URLs, paths, and system settings
 DEFAULT_CONFIG = {
     "available_datasets": {
         "goodreads_120k": {
-            "zip_url": "https://www.dropbox.com/scl/fi/uaxtsmcafw7bfy3y4bajv/goodreads_120k.zip?rlkey=ic8raj4d5lgsatxxf30yffoi1&st=nvxtcwfe&dl=0",
-            "metadata_url": "https://www.dropbox.com/scl/fi/looxnctya8lrqqsfx75vl/metadata_120k.csv?rlkey=hg4p8bljw98m3uxh56dko09t4&st=373y6pg4&dl=0",
-            "index_url": "https://www.dropbox.com/scl/fi/owsw1yih8hqppk5vghb5z/goodreads_120k.pkl?rlkey=ufob3zojiisv7f2nbrqyn1h5g&st=7o36n73b&dl=1",
+            "zip_url": "https://www.dropbox.com/scl/fi/uaxtsmcafw7bfy3y4bajv/goodreads_120k.zip?rlkey=ic8raj4d5lgsatxxf30yffoi1&st=1zvdzzt5&dl=0",
+            "metadata_url": "https://www.dropbox.com/scl/fi/looxnctya8lrqqsfx75vl/metadata_120k.csv?rlkey=hg4p8bljw98m3uxh56dko09t4&st=q4pfe3k9&dl=0",
+            "index_url": "https://www.dropbox.com/scl/fi/9wbg10bcssu8j4aknzcer/goodreads_120k.pkl?rlkey=k0tobojq0jgramk3u8db4x387&st=agzksy0a&dl=0",
             "local_zip": "datasets/goodreads_120k.zip",
             "local_index": "indexes/goodreads_120k.pkl",
             "local_metadata": "datasets/metadata_120k.csv"
         },
         "goodreads_full": {
-            "zip_url": "https://www.dropbox.com/scl/fi/8hammbdkx9prxqkr5b6vp/goodreads_full.zip?rlkey=ccdet50xaxyo4g5t3vs72bcep&st=iufh565s&dl=0",
-            "metadata_url": "https://www.dropbox.com/scl/fi/mk5zlj4gd1b3c9a7qzokg/metadata_full.csv?rlkey=pi44ppfbudfacyb29v6utfpac&st=szb6tzmz&dl=0",
-            "index_url": "https://www.dropbox.com/scl/fi/54gm1zvsjukwn0p4mn8md/goodreads_full.pkl?rlkey=42x84rpgsto2sinauxmez8sws&st=qzdq7lpo&dl=1",
+            "zip_url": "https://www.dropbox.com/scl/fi/8hammbdkx9prxqkr5b6vp/goodreads_full.zip?rlkey=ccdet50xaxyo4g5t3vs72bcep&st=s235htnn&dl=0",
+            "metadata_url": "https://www.dropbox.com/scl/fi/mk5zlj4gd1b3c9a7qzokg/metadata_full.csv?rlkey=pi44ppfbudfacyb29v6utfpac&st=q5g1mb61&dl=0",
+            "index_url": "https://www.dropbox.com/scl/fi/q5e0j26kcon58y94xf805/goodreads_full.pkl?rlkey=qy7za8mdbb0d10tg4wxps0uc5&st=iupiuh7k&dl=0",
             "local_zip": "datasets/goodreads_full.zip",
             "local_index": "indexes/goodreads_full.pkl",
             "local_metadata": "datasets/metadata_full.csv"
@@ -32,8 +56,21 @@ DEFAULT_CONFIG = {
 }
 
 
-
-def load_config(config_file='config.json', logger=None) -> Dict:
+def load_config(config_file: str = 'config.json', logger: Optional[LoggerType] = None) -> Dict:
+    """
+    Load configuration from JSON file or create default if not found.
+    
+    This function attempts to load the configuration from the specified file.
+    If the file doesn't exist or cannot be parsed, it creates a default
+    configuration file.
+    
+    Args:
+        config_file: Path to the configuration file
+        logger: Logger instance for status messages
+        
+    Returns:
+        Dict containing merged configuration (default + loaded values)
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -46,12 +83,21 @@ def load_config(config_file='config.json', logger=None) -> Dict:
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         logger.info(f"[+] Loaded configuration from {config_file}")
-        return {**DEFAULT_CONFIG, **config}
+        return {**DEFAULT_CONFIG, **config}  # Merge with defaults, prioritizing loaded values
     except Exception as e:
         logger.error(f"[X] Failed to load config: {e}")
         return _create_default_config(config_file, logger)
 
-def save_config(config: Dict, config_file='config.json', logger=None):
+
+def save_config(config: Dict, config_file: str = 'config.json', logger: Optional[LoggerType] = None) -> None:
+    """
+    Save configuration dictionary to JSON file.
+    
+    Args:
+        config: Configuration dictionary to save
+        config_file: Path to save the configuration file
+        logger: Logger instance for status messages
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -63,7 +109,18 @@ def save_config(config: Dict, config_file='config.json', logger=None):
     except Exception as e:
         logger.error(f"[X] Error saving config: {e}")
 
-def _create_default_config(config_file='config.json', logger=None) -> Dict:
+
+def _create_default_config(config_file: str = 'config.json', logger: Optional[LoggerType] = None) -> Dict:
+    """
+    Create and save default configuration file.
+    
+    Args:
+        config_file: Path to save the default configuration
+        logger: Logger instance for status messages
+        
+    Returns:
+        Dict containing default configuration
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -75,7 +132,19 @@ def _create_default_config(config_file='config.json', logger=None) -> Dict:
         logger.error(f"[X] Could not create default config: {e}")
     return DEFAULT_CONFIG
 
-def check_multiprocessing(logger=None) -> bool:
+
+def check_multiprocessing(logger: Optional[LoggerType] = None) -> bool:
+    """
+    Check if multiprocessing is supported on the current system.
+    
+    Attempts to create a multiprocessing pool to verify functionality.
+    
+    Args:
+        logger: Logger instance for status messages
+        
+    Returns:
+        Boolean indicating whether multiprocessing is supported
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -90,7 +159,16 @@ def check_multiprocessing(logger=None) -> bool:
         logger.warning("[!] Multiprocessing not available.")
         return False
 
-def ensure_directories_exist(logger=None):
+
+def ensure_directories_exist(logger: Optional[LoggerType] = None) -> None:
+    """
+    Create all required directories for the system if they don't exist.
+    
+    Creates directories for datasets, indexes, models, logs, and outputs.
+    
+    Args:
+        logger: Logger instance for status messages
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -99,7 +177,19 @@ def ensure_directories_exist(logger=None):
         Path(folder).mkdir(parents=True, exist_ok=True)
     logger.info("[+] Ensured all required directories exist.")
 
-def verify_local_file(path, description="File", logger=None):
+
+def verify_local_file(path: str, description: str = "File", logger: Optional[LoggerType] = None) -> None:
+    """
+    Verify that a required file exists.
+    
+    Args:
+        path: Path to the file to verify
+        description: Description of the file for logging
+        logger: Logger instance for status messages
+        
+    Raises:
+        FileNotFoundError: If the file doesn't exist
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -110,7 +200,19 @@ def verify_local_file(path, description="File", logger=None):
     else:
         logger.info(f"[+] {description} found: {path}")
 
-def download_file(url, destination, logger=None):
+
+def download_file(url: str, destination: str, logger: Optional[LoggerType] = None) -> None:
+    """
+    Download a file from a URL to a local destination with progress tracking.
+    
+    Args:
+        url: Source URL to download from
+        destination: Local path to save the file
+        logger: Logger instance for status messages
+        
+    Raises:
+        Exception: If download fails
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -130,13 +232,27 @@ def download_file(url, destination, logger=None):
                     if total_size:
                         progress = (bytes_downloaded / total_size) * 100
                         print(f"\rProgress: {progress:.2f}%", end='')
-            print()
+            print()  # Print newline after progress bar
             logger.info(f"[+] Download completed: {destination}")
     except Exception as e:
         logger.error(f"[X] Download failed: {e}")
         raise
 
-def get_selected_dataset_info(config, logger=None):
+
+def get_selected_dataset_info(config: Dict, logger: Optional[LoggerType] = None) -> Dict:
+    """
+    Get information about the currently selected dataset.
+    
+    Args:
+        config: Configuration dictionary
+        logger: Logger instance for status messages
+        
+    Returns:
+        Dict containing dataset information
+        
+    Raises:
+        ValueError: If the selected dataset is not defined in configuration
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -149,7 +265,17 @@ def get_selected_dataset_info(config, logger=None):
     logger.info(f"[+] Selected dataset: {dataset_name}")
     return datasets[dataset_name]
 
-def verify_dataset_and_index(config, logger=None):
+
+def verify_dataset_and_index(config: Dict, logger: Optional[LoggerType] = None) -> None:
+    """
+    Verify that all necessary dataset files exist, downloading if missing.
+    
+    Checks and downloads dataset zip, index file, and metadata file if needed.
+    
+    Args:
+        config: Configuration dictionary
+        logger: Logger instance for status messages
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
@@ -174,7 +300,16 @@ def verify_dataset_and_index(config, logger=None):
 
     logger.info("[+] All necessary dataset and index files verified.")
 
-def download_if_missing(local_path, url, logger=None):
+
+def download_if_missing(local_path: str, url: str, logger: Optional[LoggerType] = None) -> None:
+    """
+    Download a file if it doesn't exist locally.
+    
+    Args:
+        local_path: Local path to check and save to
+        url: URL to download from if file is missing
+        logger: Logger instance for status messages
+    """
     if logger is None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")

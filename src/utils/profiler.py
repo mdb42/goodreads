@@ -1,11 +1,21 @@
-# src/profiler.py
+# src/utils/profiler.py
 """
-Performance Profiling
-Author: Matthew Branson
-Date: March 14, 2025
+CSC790 Information Retrieval - Final Project
+Goodreads Sentiment Analysis and Information Retrieval System
+
+Module: profiler.py
 
 This module provides tools for measuring and reporting execution time
-and tracking diagnostic messages throughout the application.
+and tracking diagnostic messages throughout the application. It enables
+performance monitoring across different system components.
+
+Authors:
+    Matthew D. Branson (branson773@live.missouristate.edu)
+    James R. Brown (brown926@live.missouristate.edu)
+
+Missouri State University
+Department of Computer Science
+May 1, 2025
 """
 import time
 from io import StringIO
@@ -13,6 +23,10 @@ from io import StringIO
 class Profiler:
     """
     Performance profiling utility for timing operations and logging messages.
+    
+    This class provides methods for measuring execution time of specific
+    code blocks, tracking the total runtime, and collecting diagnostic
+    messages. It can generate formatted reports in plain text or LaTeX.
     
     Attributes:
         timings (dict): Dictionary mapping task names to execution times
@@ -80,7 +94,7 @@ class Profiler:
         maintaining the cumulative execution time.
         """
         if self.start_time is None:
-            self.start_time = time.time() - self.paused_time
+            self.start_time = time.time()
             self.paused_time = 0.0
 
     def get_global_time(self):
@@ -95,12 +109,21 @@ class Profiler:
         return time.time() - self.start_time + self.paused_time
    
     def end_global_timer(self):
-        """Optional method to mark end time (for symmetry with start_global_timer)."""
+        """
+        Mark the end time of global timer execution.
+        
+        This method is provided for symmetry with start_global_timer
+        and to explicitly indicate the end of timing.
+        """
         self._global_end_time = time.time()
 
     def generate_report(self, doc_count: int = None, vocab_size: int = None, filename: str = None, latex: bool = False) -> str:
         """
         Generate a formatted performance report.
+        
+        This method creates a report containing logged messages and
+        timing information. The report can be formatted as plain text
+        or LaTeX, and optionally saved to a file.
         
         Args:
             doc_count (int, optional): Number of documents processed
@@ -114,6 +137,7 @@ class Profiler:
         report = StringIO()
 
         if latex:
+            # LaTeX formatted report
             report.write("\\section*{Performance Report}\\n\\n")
             report.write("\\subsection*{Message Log}\\n\\begin{verbatim}\n")
             report.write(self.log_buffer.getvalue())
@@ -130,6 +154,7 @@ class Profiler:
             report.write(f"\\textbf{{Global Execution Time:}} {global_time:.4f} seconds\\n")
             
         else:
+            # Plain text formatted report
             report.write("=== Message Log ===\n")
             report.write(self.log_buffer.getvalue())
             report.write("\n=== Timing Breakdown ===\n")
@@ -145,6 +170,7 @@ class Profiler:
         
         report_content = report.getvalue()
 
+        # Save to file if filename is provided
         if filename:
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(report_content)

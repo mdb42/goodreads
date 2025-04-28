@@ -1,4 +1,4 @@
-# Goodreads Analytics Tool
+# Goodreads Data Manager
 
 A data exploration application for Goodreads book data. Analyze books, authors, users, reviews, and genres from the UCSD Book Graph dataset.
 

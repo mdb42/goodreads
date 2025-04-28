@@ -5,12 +5,7 @@ from collections import defaultdict, Counter
 from typing import Dict, List, Set, Tuple
 
 class MultinomialNB:
-    """
-    Multinomial Naive Bayes classifier for sentiment analysis.
-    
-    Algorithm based on classic Multinomial NB with smoothing as described
-    in IR-7.3 course materials.
-    """
+    # TODO: Implement this for real. This is just a rough sketch.
     
     def __init__(self, alpha=0.3):
         """
@@ -114,8 +109,8 @@ class MultinomialNB:
         
         accuracy = correct / len(test_labels) if test_labels else 0
         
-        # Calculate F1 scores per class
-        # [Implementation of precision, recall, F1 calculation]
+        # TODO: Calculate F1 scores per class
+        
         
         return {
             "accuracy": accuracy,
