@@ -1,4 +1,4 @@
-# main.py
+#!/usr/bin/env python3
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System
@@ -20,17 +20,18 @@ import os
 import argparse
 
 from src.index import ParallelZipIndex
-from src.classification import Classifier
-from src.retrieval import RetrievalBIM, run_search_session
 from src.utils import (
+    Profiler,
     setup_logger,
     display_banner,
     load_config,
     ensure_directories_exist,
-    display_memory_usage,
     download_if_missing,
     display_detailed_statistics,
-    Profiler
+    run_search_phase,
+    run_classification_phase,
+    run_clustering_phase,
+    run_cross_domain_phase
 )
 
 def parse_arguments():
@@ -47,15 +48,24 @@ def parse_arguments():
                         help="Setup strategy: default (use local if available), import (download existing), build (create new)")
     parser.add_argument('--config', type=str, default='config.json', 
                         help="Path to configuration file")
-    parser.add_argument('--show_stats', action='store_true',
-                        help="Show detailed statistics after loading the index")
+    parser.add_argument('--phases', type=str, default="all",
+                        help="Comma-separated list of phases to run (search,classify,cluster,crossdomain,all)")
+    parser.add_argument('--show_index_stats', action='store_true',
+                        help="Display detailed statistics for the index")
     args = parser.parse_args()
 
     # Load and update configuration with command-line parameters
     config = load_config(args.config)
     config['selected_dataset'] = args.dataset
     config['setup_mode'] = args.setup
-    config['show_stats'] = args.show_stats
+    config['show_index_stats'] = args.show_index_stats
+    
+    # Parse phases to run
+    if args.phases == "all":
+        config['phases'] = ["search", "classify", "cluster", "crossdomain"]
+    else:
+        config['phases'] = [phase.strip() for phase in args.phases.split(",")]
+        
     return config
 
 def main():
@@ -80,6 +90,7 @@ def main():
 
     logger.info(f"Selected Dataset: {config['selected_dataset']}")
     logger.info(f"Setup Mode: {config['setup_mode']}")
+    logger.info(f"Phases to run: {', '.join(config['phases'])}")
 
     # Initialize performance profiling
     profiler = Profiler()
@@ -90,7 +101,10 @@ def main():
     zip_path = dataset_info["local_zip"]
     index_path = dataset_info["local_index"]
     metadata_path = dataset_info["local_metadata"]
-    models_dir = dataset_info["models_dir"]
+    
+    # Ensure models directory field exists
+    if "models_dir" not in dataset_info:
+        dataset_info["models_dir"] = os.path.join("models", config["selected_dataset"])
 
     index = None
     logger.info(f"[+] Downloading dataset files if missing...")
@@ -150,37 +164,39 @@ def main():
         logger.error(f"[X] Fatal error during setup: {e}")
         raise
 
-    if config["show_stats"] and index:
-        logger.info("[+] Displaying index statistics...")
-        display_detailed_statistics(index)
-        logger.info("[+] Displaying memory usage...")
-        display_memory_usage(index)
+    # Display index statistics and memory usage
+    if config['show_index_stats']:
+        logger.info("[+] Preparing index statistics...")
+        display_detailed_statistics()
 
-    # Classification Phase
-    logger.info("=== Phase: Review Classification ===")
-    classifier = Classifier(zip_path, metadata_path, models_dir, logger=logger, profiler=profiler)
+    # Run enabled phases
+    if "classify" in config['phases']:
+        try:
+            run_classification_phase(index, profiler, logger, metadata_path, zip_path, config)
+        except Exception as e:
+            logger.error(f"[X] Error during classification phase: {e}")
+            logger.info("[!] Classification phase skipped due to errors")
 
-    # Clustering Phase (Placeholder)
-    logger.info("=== Phase: User Clustering ===")
-    logger.info("Coming soon...")
-    """
-    REPORT EXCERPT: After this, we will cluster reviewers based on their aggregate sentiment scores, 
-    review frequency, and other behavioral metrics.
-    """
+    if "cluster" in config['phases']:
+        try:
+            run_clustering_phase(index, profiler, logger, metadata_path, config)
+        except Exception as e:
+            logger.error(f"[X] Error during clustering phase: {e}")
+            logger.info("[!] Clustering phase skipped due to errors")
 
-    # Cross-Domain Analysis Phase (Placeholder)
-    logger.info("=== Phase: Cross-Domain Analysis ===")
-    logger.info("Maybe coming soon???")
-    """
-    REPORT EXCERPT: Once the model has been trained on the Goodreads dataset, we will proceed with applying
-    the model to a set of movie reviews and examine how effective the model is in cross-domain
-    applications.
-    """
+    if "crossdomain" in config['phases']:
+        try:
+            run_cross_domain_phase(index, profiler, logger, config)
+        except Exception as e:
+            logger.error(f"[X] Error during cross-domain phase: {e}")
+            logger.info("[!] Cross-domain phase skipped due to errors")
 
-    # Search Phase (Implemented)
-    logger.info("=== Phase: Search Reviews ===")
-    retrieval = RetrievalBIM(index, profiler=profiler, logger=logger)
-    run_search_session(retrieval, profiler, logger, metadata_path, zip_path)
+    if "search" in config['phases']:
+        try:
+            run_search_phase(index, profiler, logger, metadata_path, zip_path, config)
+        except Exception as e:
+            logger.error(f"[X] Error during search phase: {e}")
+            logger.info("[!] Search phase skipped due to errors")
 
     # Finalize and report profiling results
     profiler.end_global_timer()

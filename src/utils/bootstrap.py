@@ -31,31 +31,53 @@ LoggerType = Any
 
 # Default configuration with dataset URLs, paths, and system settings
 DEFAULT_CONFIG = {
-    "available_datasets": {
-        "goodreads_120k": {
-            "zip_url": "https://www.dropbox.com/scl/fi/uaxtsmcafw7bfy3y4bajv/goodreads_120k.zip?rlkey=ic8raj4d5lgsatxxf30yffoi1&st=1zvdzzt5&dl=0",
-            "metadata_url": "https://www.dropbox.com/scl/fi/looxnctya8lrqqsfx75vl/metadata_120k.csv?rlkey=hg4p8bljw98m3uxh56dko09t4&st=q4pfe3k9&dl=0",
-            "index_url": "https://www.dropbox.com/scl/fi/9wbg10bcssu8j4aknzcer/goodreads_120k.pkl?rlkey=k0tobojq0jgramk3u8db4x387&st=agzksy0a&dl=0",
-            "local_zip": "datasets/goodreads_120k.zip",
-            "local_index": "indexes/goodreads_120k.pkl",
-            "local_metadata": "datasets/metadata_120k.csv",
-            "models_dir": "models/goodreads_120k"
-        },
-        "goodreads_full": {
-            "zip_url": "https://www.dropbox.com/scl/fi/8hammbdkx9prxqkr5b6vp/goodreads_full.zip?rlkey=ccdet50xaxyo4g5t3vs72bcep&st=s235htnn&dl=0",
-            "metadata_url": "https://www.dropbox.com/scl/fi/mk5zlj4gd1b3c9a7qzokg/metadata_full.csv?rlkey=pi44ppfbudfacyb29v6utfpac&st=q5g1mb61&dl=0",
-            "index_url": "https://www.dropbox.com/scl/fi/q5e0j26kcon58y94xf805/goodreads_full.pkl?rlkey=qy7za8mdbb0d10tg4wxps0uc5&st=iupiuh7k&dl=0",
-            "local_zip": "datasets/goodreads_full.zip",
-            "local_index": "indexes/goodreads_full.pkl",
-            "local_metadata": "datasets/metadata_full.csv",
-            "models_dir": "models/goodreads_full"
-        }
+  "available_datasets": {
+    "goodreads_120k": {
+      "zip_url": "https://www.dropbox.com/scl/fi/uaxtsmcafw7bfy3y4bajv/goodreads_120k.zip?rlkey=ic8raj4d5lgsatxxf30yffoi1&st=8d0aivye&dl=1",
+      "metadata_url": "https://www.dropbox.com/scl/fi/looxnctya8lrqqsfx75vl/metadata_120k.csv?rlkey=hg4p8bljw98m3uxh56dko09t4&st=cglufpb7&dl=1",
+      "index_url": "https://www.dropbox.com/scl/fi/9wbg10bcssu8j4aknzcer/goodreads_120k.pkl?rlkey=k0tobojq0jgramk3u8db4x387&st=kppc7wpt&dl=1",
+      "local_zip": "datasets/goodreads_120k.zip",
+      "local_metadata": "datasets/metadata_120k.csv",
+      "local_index": "indexes/goodreads_120k.pkl",
+      "models_dir": "models/goodreads_120k",
+      "clusters_dir": "clusters/goodreads_120k"
     },
-    "selected_dataset": "goodreads_120k",
-    "task": "both",
-    "use_existing_index": True,
-    "output_dir": "output",
-    "show_stats": False
+    "goodreads_full": {
+      "zip_url": "https://www.dropbox.com/scl/fi/8hammbdkx9prxqkr5b6vp/goodreads_full.zip?rlkey=ccdet50xaxyo4g5t3vs72bcep&st=oial1zbt&dl=1",
+      "metadata_url": "https://www.dropbox.com/scl/fi/mk5zlj4gd1b3c9a7qzokg/metadata_full.csv?rlkey=pi44ppfbudfacyb29v6utfpac&st=f16ca3j9&dl=1",
+      "index_url": "https://www.dropbox.com/scl/fi/q5e0j26kcon58y94xf805/goodreads_full.pkl?rlkey=qy7za8mdbb0d10tg4wxps0uc5&st=q0nfzxgd&dl=1",
+      "local_zip": "datasets/goodreads_full.zip",
+      "local_metadata": "datasets/metadata_full.csv",
+      "local_index": "indexes/goodreads_full.pkl",
+      "models_dir": "models/goodreads_full",
+      "clusters_dir": "clusters/goodreads_full"
+    }
+  },
+  "selected_dataset": "goodreads_120k",
+  "use_existing_index": True,
+  "show_index_stats": False,
+  "phases": {
+    "search": {
+      "enabled": True,
+      "interactive": True,
+      "top_k": 10
+    },
+    "classify": {
+      "enabled": True,
+      "use_existing_model": True,
+      "interactive": False,
+      "k_folds": 5
+    },
+    "cluster": {
+      "enabled": True,
+      "recluster": False,
+      "num_clusters": 5,
+      "visualize": True
+    },
+    "crossdomain": {
+      "enabled": False
+    }
+  }
 }
 
 
@@ -176,7 +198,7 @@ def ensure_directories_exist(logger: Optional[LoggerType] = None) -> None:
         from src.utils.logger import get_logger
         logger = get_logger(name="bootstrap")
 
-    for folder in ["datasets", "indexes", "models", "logs", "outputs"]:
+    for folder in ["datasets", "indexes", "models", "clusters", "logs", "outputs"]:
         Path(folder).mkdir(parents=True, exist_ok=True)
     logger.info("[+] Ensured all required directories exist.")
 

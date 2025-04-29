@@ -30,4 +30,5 @@ outputs/
 datasets/
 indexes/
 models/
+clusters/
 .obsidian/
