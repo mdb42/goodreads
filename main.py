@@ -20,6 +20,7 @@ import os
 import argparse
 
 from src.index import ParallelZipIndex
+from src.classification import Classifier
 from src.retrieval import RetrievalBIM, run_search_session
 from src.utils import (
     setup_logger,
@@ -46,12 +47,15 @@ def parse_arguments():
                         help="Setup strategy: default (use local if available), import (download existing), build (create new)")
     parser.add_argument('--config', type=str, default='config.json', 
                         help="Path to configuration file")
+    parser.add_argument('--show_stats', action='store_true',
+                        help="Show detailed statistics after loading the index")
     args = parser.parse_args()
 
     # Load and update configuration with command-line parameters
     config = load_config(args.config)
     config['selected_dataset'] = args.dataset
     config['setup_mode'] = args.setup
+    config['show_stats'] = args.show_stats
     return config
 
 def main():
@@ -86,6 +90,7 @@ def main():
     zip_path = dataset_info["local_zip"]
     index_path = dataset_info["local_index"]
     metadata_path = dataset_info["local_metadata"]
+    models_dir = dataset_info["models_dir"]
 
     index = None
     logger.info(f"[+] Downloading dataset files if missing...")
@@ -145,23 +150,15 @@ def main():
         logger.error(f"[X] Fatal error during setup: {e}")
         raise
 
-    # Display index statistics and memory usage
-    logger.info(f"[+] Preparing statistics and memory usage reports...")
-    if index:
+    if config["show_stats"] and index:
+        logger.info("[+] Displaying index statistics...")
         display_detailed_statistics(index)
+        logger.info("[+] Displaying memory usage...")
         display_memory_usage(index)
 
-    # Classification Phase (Placeholder)
+    # Classification Phase
     logger.info("=== Phase: Review Classification ===")
-    logger.info("Coming soon...")
-    """
-    REPORT EXCERPT: To construct the sentiment analyzer, we will be using a Naive Bayes classifier to make
-    decisions on the sentiment "rating" of a review. This classifier will be fed information from
-    a feature extraction pipeline using tf-idf over tokenized and stemmed reviews. This feature
-    extraction method helps determine how "important" a word is to any given review. From these,
-    we are looking to predict a star rating on a discrete 1-5 scale, matching Goodreads' review
-    system.
-    """
+    classifier = Classifier(zip_path, metadata_path, models_dir, logger=logger, profiler=profiler)
 
     # Clustering Phase (Placeholder)
     logger.info("=== Phase: User Clustering ===")

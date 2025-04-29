@@ -38,7 +38,8 @@ DEFAULT_CONFIG = {
             "index_url": "https://www.dropbox.com/scl/fi/9wbg10bcssu8j4aknzcer/goodreads_120k.pkl?rlkey=k0tobojq0jgramk3u8db4x387&st=agzksy0a&dl=0",
             "local_zip": "datasets/goodreads_120k.zip",
             "local_index": "indexes/goodreads_120k.pkl",
-            "local_metadata": "datasets/metadata_120k.csv"
+            "local_metadata": "datasets/metadata_120k.csv",
+            "models_dir": "models/goodreads_120k"
         },
         "goodreads_full": {
             "zip_url": "https://www.dropbox.com/scl/fi/8hammbdkx9prxqkr5b6vp/goodreads_full.zip?rlkey=ccdet50xaxyo4g5t3vs72bcep&st=s235htnn&dl=0",
@@ -46,13 +47,15 @@ DEFAULT_CONFIG = {
             "index_url": "https://www.dropbox.com/scl/fi/q5e0j26kcon58y94xf805/goodreads_full.pkl?rlkey=qy7za8mdbb0d10tg4wxps0uc5&st=iupiuh7k&dl=0",
             "local_zip": "datasets/goodreads_full.zip",
             "local_index": "indexes/goodreads_full.pkl",
-            "local_metadata": "datasets/metadata_full.csv"
+            "local_metadata": "datasets/metadata_full.csv",
+            "models_dir": "models/goodreads_full"
         }
     },
     "selected_dataset": "goodreads_120k",
     "task": "both",
     "use_existing_index": True,
-    "output_dir": "output"
+    "output_dir": "output",
+    "show_stats": False
 }
 
 

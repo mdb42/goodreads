@@ -32,7 +32,7 @@ import nltk
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 
-from src.index.base import BaseIndex
+from src.index.base_index import BaseIndex
 
 class StandardIndex(BaseIndex):
     """
