@@ -133,7 +133,8 @@ def run_search_session(retrieval_model, profiler, logger, metadata_path, zip_pat
                     else:
                         stars = "N/A"
 
-                    # Create markdown for this result
+                    # Fix by precomputing the replaced text
+                    quoted_text = review_text.strip().replace('\n', '\n> ')
                     output_lines.append(
                         f"## Result {rank}\n\n"
                         f"**Filename:** `{doc_id}`\n\n"
@@ -142,9 +143,10 @@ def run_search_session(retrieval_model, profiler, logger, metadata_path, zip_pat
                         f"**Rating:** `{stars}` ({rating} stars)\n\n"
                         f"**Predicted Rating:** *Pending*\n\n"
                         f"**Review:**\n\n"
-                        f"> {review_text.strip().replace('\n', '\n> ')}\n\n"
+                        f"> {quoted_text}\n\n"
                         f"---\n\n"
                     )
+
 
                     # Log basic result to console
                     logger.info(f"{rank}. {doc_id} (Score: {score:.4f})")
