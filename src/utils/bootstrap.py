@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# src/utils/bootstrap.py
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System
@@ -70,7 +70,7 @@ DEFAULT_CONFIG = {
     },
     "cluster": {
       "enabled": True,
-      "recluster": False,
+      "recluster": True,
       "num_clusters": 5,
       "visualize": True
     },

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# src/clustering/base_clusterer.py
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System

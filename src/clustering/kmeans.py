@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# src/clustering/kmeans.py
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System
@@ -92,73 +92,115 @@ class KMeansClusterer(BaseClusterer):
     def extract_user_features(self) -> Dict[str, Dict[str, Any]]:
         """
         Extract feature vectors for each user from their reviews.
-        
-        This method:
-        1. Groups reviews by user
-        2. Calculates rating statistics (mean, variance)
-        3. Analyzes review text characteristics
-        4. Creates a feature vector for each user
-        
+
         Returns:
-            Dict[str, Dict[str, Any]]: Mapping of user_ids to feature vectors
+            Dict[str, Dict[str, float]]: Mapping of user_ids to feature vectors
         """
         if self.logger:
             self.logger.info("[+] Extracting user features...")
-        
-        # TODO: Implement feature extraction logic
-        # 1. Group reviews by user
-        # 2. Calculate rating statistics
-        # 3. Extract term usage patterns
-        # 4. Create feature vectors
-        
-        self.user_features = {}  # Placeholder
-        
+
+        if self.metadata is None or self.metadata.empty:
+            if self.logger:
+                self.logger.error("[!] Metadata not loaded.")
+            return {}
+
+        # Group reviews by user
+        grouped = self.metadata.groupby("user_id")
+
+        user_features = {}
+
+        for user_id, group in grouped:
+            ratings = group["rating"].values
+            lengths = group["text_length"].values
+
+            # Simple numeric feature vector per user
+            features = {
+                "num_reviews": len(ratings),
+                "avg_rating": float(np.mean(ratings)),
+                "rating_variance": float(np.var(ratings)),
+                "avg_length": float(np.mean(lengths)),
+            }
+            user_features[str(user_id)] = features
+
+        self.user_features = user_features
+
         if self.logger:
             self.logger.info(f"[+] Extracted features for {len(self.user_features)} users")
-        
+
         return self.user_features
-    
+
     def cluster(self, k: int = None, **kwargs) -> Dict[int, List[str]]:
         """
         Cluster users based on their feature vectors using K-means.
         
         Args:
             k: Number of clusters (overrides the value set in constructor)
-            **kwargs: Additional parameters for K-means
             
         Returns:
             Dict[int, List[str]]: Mapping of cluster_ids to lists of user_ids
         """
         if k is not None:
             self.k = k
-            
+
         if self.logger:
             self.logger.info(f"[+] Clustering users into {self.k} groups...")
-        
+
         if not self.user_features:
             self.extract_user_features()
-            
+
         if not self.user_features:
             if self.logger:
                 self.logger.error("[!] No user features available for clustering")
             return {}
-            
-        # TODO: Implement K-means clustering
-        # 1. Initialize centroids
-        # 2. Assign users to nearest centroid
-        # 3. Update centroids
-        # 4. Repeat until convergence
-        
+
+        user_ids = list(self.user_features.keys())
+        vectors = [self.user_features[uid] for uid in user_ids]
+
+        # Convert vectors to NumPy array
+        feature_keys = sorted(vectors[0].keys())
+        X = np.array([[vec[key] for key in feature_keys] for vec in vectors])
+
+        # Initialize centroids randomly
+        initial_indices = np.random.choice(len(X), self.k, replace=False)
+        centroids = X[initial_indices]
+
+        for i in range(self.max_iter):
+            # Assign each point to the nearest centroid
+            distances = np.linalg.norm(X[:, np.newaxis] - centroids, axis=2)
+            assignments = np.argmin(distances, axis=1)
+
+            # Recompute centroids
+            new_centroids = np.array([
+                X[assignments == j].mean(axis=0) if np.any(assignments == j) else centroids[j]
+                for j in range(self.k)
+            ])
+
+            if np.allclose(centroids, new_centroids, atol=self.tol):
+                break
+
+            centroids = new_centroids
+
+        # Final assignments
+        self.cluster_assignments = {
+            user_id: int(assignments[i]) for i, user_id in enumerate(user_ids)
+        }
+
+        # Save centroids
+        self.centroids = {
+            i: {key: float(val) for key, val in zip(feature_keys, centroids[i])}
+            for i in range(self.k)
+        }
+
         # Group users by cluster
         cluster_members = defaultdict(list)
         for user_id, cluster_id in self.cluster_assignments.items():
             cluster_members[cluster_id].append(user_id)
-            
+
         if self.logger:
             self.logger.info(f"[+] Clustering complete. Found {len(cluster_members)} clusters")
-            
+
         return dict(cluster_members)
-    
+
     def save(self) -> bool:
         """
         Save the clustering results to the output directory.
@@ -289,78 +331,90 @@ class KMeansClusterer(BaseClusterer):
     def analyze_clusters(self) -> Dict[int, Dict[str, Any]]:
         """
         Generate statistics and insights about each cluster.
-        
+
         Returns:
             Dict[int, Dict[str, Any]]: Statistics for each cluster
         """
         if self.logger:
             self.logger.info("[+] Analyzing clusters...")
-            
+
         if not self.cluster_assignments:
             if self.logger:
                 self.logger.warning("[!] No clusters to analyze. Run cluster() first.")
             return {}
-            
+
         analysis = {}
-        
+
         # Group users by cluster
         cluster_members = defaultdict(list)
         for user_id, cluster_id in self.cluster_assignments.items():
             cluster_members[cluster_id].append(user_id)
-            
+
         # Analyze each cluster
         for cluster_id, members in cluster_members.items():
-            # TODO: Implement cluster analysis
-            # 1. Calculate size and density
-            # 2. Analyze rating patterns
-            # 3. Find characteristic terms
-            # 4. Identify representative users
-            
             analysis[cluster_id] = {
                 "size": len(members),
                 "members": members,
-                "centroid": self.centroids.get(cluster_id, {})
-                # Add more statistics as needed
+                "centroid": self.centroids.get(cluster_id, {}),
+                "description": self.get_cluster_description(cluster_id),
             }
-            
+
         if self.logger:
             self.logger.info(f"[+] Analysis complete for {len(analysis)} clusters")
-            
+
         return analysis
-    
+
     def visualize(self, filepath: str = None) -> Optional[str]:
         """
-        Generate visualizations of the clustering results.
-        
+        Generate a 2D PCA scatter plot of the user clusters.
+
         Args:
-            filepath: Optional path to save visualization files
-            
+            filepath: Optional path to save the visualization
+
         Returns:
-            Optional[str]: Path to saved visualization if filepath is provided,
-                          otherwise None
+            Optional[str]: Path to saved visualization if specified
         """
         if self.logger:
             self.logger.info("[+] Generating cluster visualizations...")
-            
+
         if not self.cluster_assignments:
             if self.logger:
                 self.logger.warning("[!] No clusters to visualize. Run cluster() first.")
             return None
-            
-        # TODO: Implement visualization
-        # 1. Dimensionality reduction (PCA or t-SNE)
-        # 2. Scatter plot with clusters colored
-        # 3. Additional visualizations (rating distributions, etc.)
-        
+
+        import matplotlib.pyplot as plt
+        from sklearn.decomposition import PCA
+
+        user_ids = list(self.user_features.keys())
+        feature_keys = sorted(next(iter(self.user_features.values())).keys())
+        X = np.array([[self.user_features[uid].get(k, 0.0) for k in feature_keys] for uid in user_ids])
+        labels = np.array([self.cluster_assignments[uid] for uid in user_ids])
+
+        # Reduce dimensions with PCA
+        pca = PCA(n_components=2)
+        X_reduced = pca.fit_transform(X)
+
+        # Plot
+        plt.figure(figsize=(10, 7))
+        for cluster_id in np.unique(labels):
+            idxs = labels == cluster_id
+            plt.scatter(X_reduced[idxs, 0], X_reduced[idxs, 1], label=f"Cluster {cluster_id}", s=8, alpha=0.7)
+
+        plt.title("User Clusters (PCA Visualization)")
+        plt.xlabel("PC1")
+        plt.ylabel("PC2")
+        plt.legend()
+        plt.tight_layout()
+
         if filepath:
-            # Save visualization to file
+            plt.savefig(filepath)
             if self.logger:
                 self.logger.info(f"[+] Visualization saved to {filepath}")
             return filepath
         else:
-            # Display visualization
+            plt.show()
             return None
-    
+
     def get_cluster_for_user(self, user_id: str) -> int:
         """
         Get the cluster assignment for a specific user.
@@ -375,23 +429,47 @@ class KMeansClusterer(BaseClusterer):
     
     def get_cluster_description(self, cluster_id: int) -> str:
         """
-        Get a human-readable description of a cluster.
-        
+        Generate a descriptive label for the cluster based on centroid values.
+
         Args:
-            cluster_id: Cluster identifier
-            
+            cluster_id: ID of the cluster
+
         Returns:
-            str: Description of the cluster's characteristics
+            str: Natural-language summary of the cluster's reviewer type
         """
         if cluster_id not in self.centroids:
             return "Unknown cluster"
-            
-        # TODO: Generate meaningful cluster description
-        # Example description formats:
-        # - "Critical reviewers who generally rate books lower than average"
-        # - "Enthusiastic readers who focus on fantasy and sci-fi genres"
-        
-        return f"Cluster {cluster_id}"
+
+        centroid = self.centroids[cluster_id]
+        mean_rating = centroid.get("mean_rating", 0)
+        var_rating = centroid.get("var_rating", 0)
+        mean_length = centroid.get("mean_review_length", 0)
+
+        description = []
+
+        # Rating-based
+        if mean_rating < 2:
+            description.append("critical reviewers")
+        elif mean_rating < 3:
+            description.append("mixed or skeptical reviewers")
+        elif mean_rating < 4:
+            description.append("moderately positive reviewers")
+        else:
+            description.append("enthusiastic fans")
+
+        # Variance-based
+        if var_rating > 1.5:
+            description.append("with inconsistent ratings")
+        elif var_rating < 0.5:
+            description.append("with consistent ratings")
+
+        # Review length
+        if mean_length > 500:
+            description.append("who write long reviews")
+        elif mean_length < 100:
+            description.append("who write short reviews")
+
+        return ", ".join(description).capitalize()
     
     def _euclidean_distance(self, v1: Dict[str, float], v2: Dict[str, float]) -> float:
         """
@@ -442,3 +520,56 @@ class KMeansClusterer(BaseClusterer):
             
         differences = sum(1 for user_id in current if user_id in prev and current[user_id] != prev[user_id])
         return differences / len(current) < self.tol
+    
+    def write_summary_markdown(self, filepath: str):
+        """
+        Write a Markdown summary of each cluster's characteristics.
+
+        Args:
+            filepath: Path to save the summary Markdown file
+        """
+        if not self.cluster_assignments or not self.centroids:
+            if self.logger:
+                self.logger.warning("[!] No clustering data available for summary.")
+            return
+
+        # Group members by cluster
+        cluster_members = defaultdict(list)
+        for user_id, cluster_id in self.cluster_assignments.items():
+            cluster_members[cluster_id].append(user_id)
+
+        # Begin writing Markdown
+        lines = [
+            "# Cluster Summary",
+            "",
+            f"**Total Users Clustered:** {len(self.cluster_assignments)}",
+            f"**Total Clusters:** {len(self.centroids)}",
+            ""
+        ]
+
+        for cluster_id in sorted(self.centroids.keys()):
+            centroid = self.centroids[cluster_id]
+            description = self.get_cluster_description(cluster_id)
+            size = len(cluster_members[cluster_id])
+
+            lines.extend([
+                f"## Cluster {cluster_id}",
+                f"**Size:** {size} users",
+                f"**Description:** {description}",
+                "",
+                "**Centroid Statistics:**",
+                "",
+                "```",
+                json.dumps(centroid, indent=2),
+                "```",
+                ""
+            ])
+
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            if self.logger:
+                self.logger.info(f"[+] Cluster summary written to {filepath}")
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"[!] Failed to write cluster summary: {e}")

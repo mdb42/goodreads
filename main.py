@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# main.py
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System
@@ -59,13 +59,19 @@ def parse_arguments():
     config['selected_dataset'] = args.dataset
     config['setup_mode'] = args.setup
     config['show_index_stats'] = args.show_index_stats
-    
-    # Parse phases to run
+
+    # Enable/disable phases based on arguments
     if args.phases == "all":
-        config['phases'] = ["search", "classify", "cluster", "crossdomain"]
+        for phase in config['phases']:
+            config['phases'][phase]['enabled'] = True
     else:
-        config['phases'] = [phase.strip() for phase in args.phases.split(",")]
-        
+        for phase in config['phases']:
+            config['phases'][phase]['enabled'] = False
+        for phase in args.phases.split(","):
+            phase = phase.strip()
+            if phase in config['phases']:
+                config['phases'][phase]['enabled'] = True
+
     return config
 
 def main():
@@ -170,28 +176,28 @@ def main():
         display_detailed_statistics()
 
     # Run enabled phases
-    if "classify" in config['phases']:
+    if config["phases"]["classify"]["enabled"]:
         try:
             run_classification_phase(index, profiler, logger, metadata_path, zip_path, config)
         except Exception as e:
             logger.error(f"[X] Error during classification phase: {e}")
             logger.info("[!] Classification phase skipped due to errors")
 
-    if "cluster" in config['phases']:
+    if config["phases"]["cluster"]["enabled"]:
         try:
             run_clustering_phase(index, profiler, logger, metadata_path, config)
         except Exception as e:
             logger.error(f"[X] Error during clustering phase: {e}")
             logger.info("[!] Clustering phase skipped due to errors")
 
-    if "crossdomain" in config['phases']:
+    if config["phases"]["crossdomain"]["enabled"]:
         try:
             run_cross_domain_phase(index, profiler, logger, config)
         except Exception as e:
             logger.error(f"[X] Error during cross-domain phase: {e}")
             logger.info("[!] Cross-domain phase skipped due to errors")
 
-    if "search" in config['phases']:
+    if config["phases"]["search"]["enabled"]:
         try:
             run_search_phase(index, profiler, logger, metadata_path, zip_path, config)
         except Exception as e:

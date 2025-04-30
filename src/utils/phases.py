@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# src/utils/phases.py
 """
 CSC790 Information Retrieval - Final Project
 Goodreads Sentiment Analysis and Information Retrieval System
@@ -121,7 +121,7 @@ def run_clustering_phase(index, profiler, logger, metadata_path, config):
 
         # ----- Load or fit ---------------------------------------------------
         cfg_path = os.path.join(out_dir, "config.json")
-        if os.path.exists(cfg_path) and not config.get("recluster", False):
+        if os.path.exists(cfg_path) and not config.get("phases", {}).get("cluster", {}).get("recluster", False):
             logger.info(f"[+] Loading clusters from {out_dir}")
             with profiler.timer("Load Clusters"):
                 clusterer = KMeansClusterer.load(index, metadata_path, out_dir,
@@ -131,7 +131,8 @@ def run_clustering_phase(index, profiler, logger, metadata_path, config):
             with profiler.timer("Init Clusterer"):
                 clusterer = KMeansClusterer(index, metadata_path, out_dir,
                                              logger, profiler,
-                                             k=config.get("num_clusters", 5))
+                                             k=config.get("phases", {}).get("cluster", {}).get("num_clusters", 5)
+)
             with profiler.timer("Extract Features"):
                 feats = clusterer.extract_user_features()
                 logger.info(f"[+] Features for {len(feats)} users")
@@ -151,6 +152,10 @@ def run_clustering_phase(index, profiler, logger, metadata_path, config):
             img = os.path.join(out_dir, "visualization.png")
             clusterer.visualize(filepath=img)
             logger.info(f"[+] Plot saved → {img}")
+
+        summary_path = os.path.join(out_dir, "cluster_summary.md")
+        clusterer.write_summary_markdown(summary_path)
+        logger.info(f"[+] Summary written → {summary_path}")
 
     except ImportError:
         logger.info("[!] Clustering module missing - skipped")
