@@ -64,48 +64,48 @@ def chi_square(index, doc_labels, k=1000):
     vocab = set(index.term_doc_freqs.keys())
     N = len(doc_labels)
 
-    # Precompute class counts
+    # Precompute doc counts per class
     N_c = {c: sum(1 for label in doc_labels.values() if label == c) for c in classes}
 
-    # Term frequency per class
-    N_t = defaultdict(int)  # number of docs with term t
-    N_tc = defaultdict(lambda: defaultdict(int))  # number of docs with term t and class c
+    # Precompute term counts per class
+    chi2_scores = {}
 
-    for doc_id, class_label in doc_labels.items():
-        doc_terms = set(index.doc_term_freqs.get(doc_id, {}).keys())
-        for term in doc_terms:
-            N_t[term] += 1
-            N_tc[term][class_label] += 1
-
-    chi_2_scores = {}
     for term in vocab:
+        term_docs = index.term_doc_freqs[term]
+        N_t = len(term_docs)
+
+        # Compute class-wise counts
+        N_tc = defaultdict(int)
+        for doc_id in term_docs:
+            label = doc_labels.get(doc_id)
+            if label is not None:
+                N_tc[label] += 1
+
         max_score = 0
         for c in classes:
-            N_11 = N_tc[term][c]  # Document contains both the term and the class
-            N_10 = N_t[term] - N_11  # Document only contains the term
-            N_01 = N_c[c] - N_11  # Document only belongs to the specified class
-            N_00 = N - N_11 - N_10 - N_01  # Document doesn't contain the term nor belongs to the class
+            N11 = N_tc[c]  # Term present in doc; doc is in class c
+            N10 = N_t - N11  # Term present in doc; doc is NOT in class c
+            N01 = N_c[c] - N11  # Term NOT present in doc; doc is in class c
+            N00 = N - N11 - N10 - N01  # Term NOT present in doc; doc is NOT in class c
 
-            numerator = (N_11 * N_00 - N_10 * N_01) ** 2 * N
-            denominator = (N_11 + N_01) * (N_10 + N_00) * (N_11 + N_10) * (N_01 + N_00)
+            numerator = (N11 * N00 - N10 * N01) ** 2 * N
+            denominator = (N11 + N01) * (N10 + N00) * (N11 + N10) * (N01 + N00)
 
             if denominator > 0:
-                chi2 = numerator / denominator
-                max_score = max(max_score, chi2)
+                score = numerator / denominator
+                max_score = max(max_score, score)
 
-        chi_2_scores[term] = max_score
+        chi2_scores[term] = max_score
 
-    selected_terms = sorted(chi_2_scores.items(), key=lambda x: x[1], reverse=True)[:k]
+    selected_terms = sorted(chi2_scores.items(), key=lambda x: x[1], reverse=True)[:k]
     return {term for term, _ in selected_terms}
 
 def frequency_based(index, doc_labels, k=1000):
     # TODO: Implement frequency-based feature selection
     term_doc_counts = Counter()
 
-    for doc_id in doc_labels:
-        doc_terms = index.doc_term_freqs.get(doc_id, {})
-        for term in doc_terms:
-            term_doc_counts[term] += 1
+    for term, doc_freqs in index.term_doc_freqs.items():
+        term_doc_counts[term] = len(doc_freqs)
 
     most_common = term_doc_counts.most_common(k)
     return {term for term, _ in most_common}
