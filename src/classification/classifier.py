@@ -28,6 +28,8 @@ import os
 import pickle
 from typing import Dict, List, Any, Optional
 from src.classification import BaseClassifier
+from sklearn.model_selection import KFold
+from src.classification.multinomial_nb import MultinomialNB
 
 class Classifier(BaseClassifier):
     """
@@ -106,14 +108,65 @@ class Classifier(BaseClassifier):
         #    - Test on remaining fold
         #    - Store model and metrics
         # 4. Calculate average metrics across folds
-        
-        # Placeholder metrics
-        return {
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+
+        # === 1. Load metadata + build index ===
+        doc_labels = self._load_labels()
+        index = self._build_index(doc_labels)
+
+        # === 2. Feature selection (optional) ===
+        feature_selector = kwargs.get("feature_selector")
+        k_features = kwargs.get("k_features", 1000)
+
+        if feature_selector:
+            self.features = feature_selector(index, doc_labels, k=k_features)
+            self.logger.info(f"[+] Selected {len(self.features)} features using {feature_selector.__name__}")
+        else:
+            self.features = set(index.term_doc_freqs.keys())
+            self.logger.info(f"[+] Using all {len(self.features)} terms")
+
+        # === 3. K-Fold CV ===
+        doc_ids = list(doc_labels.keys())
+        kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+        metrics = []
+
+        classifier_type = kwargs.get("classifier_type", "naive_bayes")
+        model_params = kwargs.get("model_params", {})
+
+        for fold_idx, (train_idx, test_idx) in enumerate(kf.split(doc_ids)):
+            self.logger.info(f"[+] Fold {fold_idx + 1}/{k_folds}")
+
+            train_ids = [doc_ids[i] for i in train_idx]
+            test_ids = [doc_ids[i] for i in test_idx]
+
+            train_labels = {doc_id: doc_labels[doc_id] for doc_id in train_ids}
+            test_labels = {doc_id: doc_labels[doc_id] for doc_id in test_ids}
+
+            # === 4. Model selection ===
+            if classifier_type == "naive_bayes":
+                model = MultinomialNB(**model_params)
+            else:
+                raise ValueError(f"Unsupported classifier type: {classifier_type}")
+
+            model.fit(index, train_labels)
+            result = model.evaluate(index, test_labels)
+
+            self.models.append(model)
+            metrics.append(result)
+
+        # === 5. Aggregate results ===
+        avg_metrics = {
+            "accuracy": sum(m.get("accuracy", 0) for m in metrics) / k_folds
         }
+
+        self.logger.info(f"[+] Training complete. Avg accuracy: {avg_metrics['accuracy']:.4f}")
+        return avg_metrics
+        # Placeholder metrics
+        # return {
+        #     "accuracy": 0.0,
+        #     "precision": 0.0,
+        #     "recall": 0.0,
+        #     "f1": 0.0
+        # }
     
     def save(self) -> bool:
         """
@@ -264,8 +317,45 @@ class Classifier(BaseClassifier):
         
         Args:
             texts: List of review texts to classify
-                
+
         Returns:
             List[int]: Predicted ratings (1-5)
         """
         return [self.predict(text) for text in texts]
+
+    def _build_index(self):
+        from src.index.parallel_zip_index import ParallelZipIndex
+
+        if self.logger:
+            self.logger.info("[+] Building or loading index")
+
+        index = ParallelZipIndex(self.zip_path, logger=self.logger)
+        index.build_index()
+
+        return index
+
+    def _load_labels(self, index):
+        import csv
+
+        if self.logger:
+            self.logger.info("[+] Loading document labels using index filenames")
+
+        labels = {}
+        filename_to_id = {filename: i for i, filename in enumerate(index.filenames)}
+
+        with open(self.metadata_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                filename = row.get("filename") or row.get("file")  # adjust as needed
+                rating = row.get("rating")
+                if filename and rating:
+                    try:
+                        doc_id = filename_to_id[filename]
+                        labels[doc_id] = int(rating)
+                    except KeyError:
+                        continue  # metadata file name not found in ZIP
+
+        if self.logger:
+            self.logger.info(f"[+] Loaded {len(labels)} document labels")
+
+        return labels
