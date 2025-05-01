@@ -64,7 +64,7 @@ DEFAULT_CONFIG = {
     },
     "classify": {
       "enabled": True,
-      "use_existing_model": True,
+      "use_existing_model": False,
       "interactive": False,
       "k_folds": 5
     },

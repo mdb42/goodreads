@@ -30,6 +30,8 @@ from typing import Dict, List, Any, Optional
 from src.classification import BaseClassifier
 from sklearn.model_selection import KFold
 from src.classification.multinomial_nb import MultinomialNB
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from collections import defaultdict, Counter
 
 class Classifier(BaseClassifier):
     """
@@ -65,6 +67,7 @@ class Classifier(BaseClassifier):
         self.logger = logger
         self.zip_path = zip_path
         self.metadata_path = metadata_path
+        print(self.metadata_path)
         self.models_dir = models_dir
         self.profiler = profiler
         self.models = []
@@ -109,11 +112,11 @@ class Classifier(BaseClassifier):
         #    - Store model and metrics
         # 4. Calculate average metrics across folds
 
-        # === 1. Load metadata + build index ===
-        doc_labels = self._load_labels()
-        index = self._build_index(doc_labels)
+        # === Load data ===
+        index = self._build_index()
+        doc_labels = self._load_labels(index)
 
-        # === 2. Feature selection (optional) ===
+        # === Optional feature selection ===
         feature_selector = kwargs.get("feature_selector")
         k_features = kwargs.get("k_features", 1000)
 
@@ -124,49 +127,36 @@ class Classifier(BaseClassifier):
             self.features = set(index.term_doc_freqs.keys())
             self.logger.info(f"[+] Using all {len(self.features)} terms")
 
-        # === 3. K-Fold CV ===
-        doc_ids = list(doc_labels.keys())
-        kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-        metrics = []
+        # === Apply feature filtering ===
+        if self.features:
+            for doc_id in index.doc_term_freqs:
+                index.doc_term_freqs[doc_id] = {
+                    t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
+                }
 
-        classifier_type = kwargs.get("classifier_type", "naive_bayes")
+        # === Train model ===
         model_params = kwargs.get("model_params", {})
+        model = MultinomialNB(**model_params)
+        model.fit(index, doc_labels)
+        self.models = [model]  # single model
 
-        for fold_idx, (train_idx, test_idx) in enumerate(kf.split(doc_ids)):
-            self.logger.info(f"[+] Fold {fold_idx + 1}/{k_folds}")
+        # === Evaluate on full training set ===
+        preds = model.predict(index.doc_term_freqs)
 
-            train_ids = [doc_ids[i] for i in train_idx]
-            test_ids = [doc_ids[i] for i in test_idx]
+        y_true = [doc_labels[doc_id] for doc_id in preds]
+        y_pred = [preds[doc_id] for doc_id in preds]
 
-            train_labels = {doc_id: doc_labels[doc_id] for doc_id in train_ids}
-            test_labels = {doc_id: doc_labels[doc_id] for doc_id in test_ids}
+        acc = accuracy_score(y_true, y_pred)
+        p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
 
-            # === 4. Model selection ===
-            if classifier_type == "naive_bayes":
-                model = MultinomialNB(**model_params)
-            else:
-                raise ValueError(f"Unsupported classifier type: {classifier_type}")
+        self.logger.info(f"[+] Training complete. Accuracy: {acc:.4f}")
 
-            model.fit(index, train_labels)
-            result = model.evaluate(index, test_labels)
-
-            self.models.append(model)
-            metrics.append(result)
-
-        # === 5. Aggregate results ===
-        avg_metrics = {
-            "accuracy": sum(m.get("accuracy", 0) for m in metrics) / k_folds
+        return {
+            "accuracy": acc,
+            "precision": p,
+            "recall": r,
+            "f1": f1
         }
-
-        self.logger.info(f"[+] Training complete. Avg accuracy: {avg_metrics['accuracy']:.4f}")
-        return avg_metrics
-        # Placeholder metrics
-        # return {
-        #     "accuracy": 0.0,
-        #     "precision": 0.0,
-        #     "recall": 0.0,
-        #     "f1": 0.0
-        # }
     
     def save(self) -> bool:
         """
@@ -279,38 +269,71 @@ class Classifier(BaseClassifier):
         # 2. Preprocess and extract features
         # 3. Get predictions from all models
         # 4. Calculate metrics
-        
-        # Placeholder metrics
+
+        index = self._build_index()
+        doc_labels = self._load_labels(index)
+
+        # Each model makes a prediction for each doc
+        predictions = defaultdict(list)  # doc_id -> list of predictions
+
+        for model in self.models:
+            for doc_id in doc_labels:
+                pred = model.predict(index, {doc_id: None})[doc_id]
+                predictions[doc_id].append(pred)
+
+        # Aggregate predictions via majority vote
+        final_preds = []
+        true_labels = []
+
+        for doc_id, votes in predictions.items():
+            vote_count = Counter(votes)
+            majority_vote = vote_count.most_common(1)[0][0]
+            final_preds.append(majority_vote)
+            true_labels.append(doc_labels[doc_id])
+
+        # Compute evaluation metrics
+        accuracy = accuracy_score(true_labels, final_preds)
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            true_labels, final_preds, average='macro', zero_division=0
+        )
+
         return {
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
         }
-    
+
+        # Placeholder metrics
+        # return {
+        #     "accuracy": 0.0,
+        #     "precision": 0.0,
+        #     "recall": 0.0,
+        #     "f1": 0.0
+        # }
+
     def predict(self, text: str) -> int:
         """
-        Predict rating for a single review text.
-        
+        Predict a rating for a single preprocessed review string.
+
         Args:
-            text: Review text to classify
-                
+            text: A preprocessed string of terms (space-separated)
+
         Returns:
-            int: Predicted rating (1-5)
+            int: Predicted rating (1–5)
         """
         if not self.models:
-            if self.logger:
-                self.logger.error("[!] No trained models available")
-            return 3  # Default to middle rating
-        
-        # TODO: Implement prediction
-        # 1. Preprocess text
-        # 2. Extract features
-        # 3. Get predictions from all models
-        # 4. Combine predictions (e.g., voting, averaging)
-        
-        return 3  # Placeholder (default to middle rating)
-    
+            self.logger.error("[!] No trained model available for prediction")
+            return 3  # neutral fallback
+
+        model = self.models[0]
+        term_freqs = self._count_terms(text)
+
+        doc_id = 0  # dummy key
+        preds = model.predict({doc_id: term_freqs})
+
+        return preds[doc_id]
+
     def predict_batch(self, texts: List[str]) -> List[int]:
         """
         Predict ratings for multiple review texts.
@@ -338,24 +361,41 @@ class Classifier(BaseClassifier):
         import csv
 
         if self.logger:
-            self.logger.info("[+] Loading document labels using index filenames")
+            self.logger.info("[+] Loading document labels using review_id column")
 
         labels = {}
-        filename_to_id = {filename: i for i, filename in enumerate(index.filenames)}
+        filename_to_id = {f"{i}.txt": i for i in range(len(index.filenames))}
 
         with open(self.metadata_path, newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                filename = row.get("filename") or row.get("file")  # adjust as needed
+                review_id = row.get("review_id")
                 rating = row.get("rating")
-                if filename and rating:
+                if review_id is not None and rating is not None:
+                    filename = f"{review_id}.txt"
                     try:
                         doc_id = filename_to_id[filename]
                         labels[doc_id] = int(rating)
                     except KeyError:
-                        continue  # metadata file name not found in ZIP
+                        continue  # review_id not found in filenames
 
         if self.logger:
             self.logger.info(f"[+] Loaded {len(labels)} document labels")
 
         return labels
+
+    def _count_terms(self, text: str) -> Dict[str, int]:
+        """
+        Convert a preprocessed string into a term frequency dictionary.
+
+        Args:
+            text: A pre-tokenized, stemmed string (e.g., "book amaz could put down")
+
+        Returns:
+            Dict[str, int]: Term frequency map
+        """
+        tf = {}
+        for term in text.split():
+            if not self.features or term in self.features:
+                tf[term] = tf.get(term, 0) + 1
+        return tf
