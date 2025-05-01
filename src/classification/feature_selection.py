@@ -60,8 +60,10 @@ def mutual_information(index, doc_labels, k=1000):
 
 def chi_square(index, doc_labels, k=1000):
     # TODO: Implement Chi-Square feature selection
-    pass
+    classes = set(doc_labels.values())
+    vocab = set(index.term_doc_freqs.keys())
 
 def frequency_based(index, doc_labels, k=1000):
     # TODO: Implement frequency-based feature selection
-    pass
+    classes = set(doc_labels.values())
+    vocab = set(index.term_doc_freqs.keys())
