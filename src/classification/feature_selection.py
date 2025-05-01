@@ -62,8 +62,50 @@ def chi_square(index, doc_labels, k=1000):
     # TODO: Implement Chi-Square feature selection
     classes = set(doc_labels.values())
     vocab = set(index.term_doc_freqs.keys())
+    N = len(doc_labels)
+
+    # Precompute class counts
+    N_c = {c: sum(1 for label in doc_labels.values() if label == c) for c in classes}
+
+    # Term frequency per class
+    N_t = defaultdict(int)  # number of docs with term t
+    N_tc = defaultdict(lambda: defaultdict(int))  # number of docs with term t and class c
+
+    for doc_id, class_label in doc_labels.items():
+        doc_terms = set(index.doc_term_freqs.get(doc_id, {}).keys())
+        for term in doc_terms:
+            N_t[term] += 1
+            N_tc[term][class_label] += 1
+
+    chi_2_scores = {}
+    for term in vocab:
+        max_score = 0
+        for c in classes:
+            N_11 = N_tc[term][c]  # Document contains both the term and the class
+            N_10 = N_t[term] - N_11  # Document only contains the term
+            N_01 = N_c[c] - N_11  # Document only belongs to the specified class
+            N_00 = N - N_11 - N_10 - N_01  # Document doesn't contain the term nor belongs to the class
+
+            numerator = (N_11 * N_00 - N_10 * N_01) ** 2 * N
+            denominator = (N_11 + N_01) * (N_10 + N_00) * (N_11 + N_10) * (N_01 + N_00)
+
+            if denominator > 0:
+                chi2 = numerator / denominator
+                max_score = max(max_score, chi2)
+
+        chi_2_scores[term] = max_score
+
+    selected_terms = sorted(chi_2_scores.items(), key=lambda x: x[1], reverse=True)[:k]
+    return {term for term, _ in selected_terms}
 
 def frequency_based(index, doc_labels, k=1000):
     # TODO: Implement frequency-based feature selection
-    classes = set(doc_labels.values())
-    vocab = set(index.term_doc_freqs.keys())
+    term_doc_counts = Counter()
+
+    for doc_id in doc_labels:
+        doc_terms = index.doc_term_freqs.get(doc_id, {})
+        for term in doc_terms:
+            term_doc_counts[term] += 1
+
+    most_common = term_doc_counts.most_common(k)
+    return {term for term, _ in most_common}
