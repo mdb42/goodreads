@@ -102,10 +102,16 @@ def chi_square(index, doc_labels, k=1000):
 
 def frequency_based(index, doc_labels, k=1000):
     # TODO: Implement frequency-based feature selection
-    term_doc_counts = Counter()
+    class_term_counts = defaultdict(Counter)
 
-    for term, doc_freqs in index.term_doc_freqs.items():
-        term_doc_counts[term] = len(doc_freqs)
+    for doc_id, label in doc_labels.items():
+        term_freqs = index.doc_term_freqs.get(doc_id, {})
+        for term in term_freqs:
+            class_term_counts[label][term] += 1
 
-    most_common = term_doc_counts.most_common(k)
+    combined_counter = Counter()
+    for class_counter in class_term_counts.values():
+        combined_counter.update(class_counter)
+
+    most_common = combined_counter.most_common(k)
     return {term for term, _ in most_common}
