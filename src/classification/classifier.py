@@ -253,56 +253,36 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Evaluating classifier")
-        
-        if not self.models:
-            if self.logger:
-                self.logger.error("[!] No trained models available")
-            return {
-                "accuracy": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
-                "f1": 0.0
-            }
-        
-        # TODO: Implement evaluation
-        # 1. Load test data
-        # 2. Preprocess and extract features
-        # 3. Get predictions from all models
-        # 4. Calculate metrics
 
+        if not self.models:
+            self.logger.error("[!] No trained model available for evaluation")
+            return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0}
+
+        model = self.models[0]  # single trained model
+
+        # Rebuild index and reload labels
         index = self._build_index()
         doc_labels = self._load_labels(index)
 
-        # Each model makes a prediction for each doc
-        predictions = defaultdict(list)  # doc_id -> list of predictions
+        # Apply feature filtering (if features were selected)
+        if self.features:
+            for doc_id in index.doc_term_freqs:
+                index.doc_term_freqs[doc_id] = {
+                    t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
+                }
 
-        for model in self.models:
-            for doc_id in doc_labels:
-                pred = model.predict(index, {doc_id: None})[doc_id]
-                predictions[doc_id].append(pred)
+        # === Use model to predict on all documents
+        predictions = model.predict(index.doc_term_freqs)
 
-        # Aggregate predictions via majority vote
-        final_preds = []
-        true_labels = []
+        # === Extract true and predicted labels
+        y_true = [doc_labels[doc_id] for doc_id in predictions]
+        y_pred = [predictions[doc_id] for doc_id in predictions]
 
-        for doc_id, votes in predictions.items():
-            vote_count = Counter(votes)
-            majority_vote = vote_count.most_common(1)[0][0]
-            final_preds.append(majority_vote)
-            true_labels.append(doc_labels[doc_id])
+        # === Compute metrics
+        acc = accuracy_score(y_true, y_pred)
+        p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
 
-        # Compute evaluation metrics
-        accuracy = accuracy_score(true_labels, final_preds)
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            true_labels, final_preds, average='macro', zero_division=0
-        )
-
-        return {
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1
-        }
+        return {"accuracy": acc, "precision": p, "recall": r, "f1": f1}
 
         # Placeholder metrics
         # return {
@@ -360,7 +340,6 @@ class Classifier(BaseClassifier):
     def _load_labels(self, index):
         if self.logger:
             self.logger.info("[+] Loading document labels using index.filenames")
-        print(index.filenames)
         labels = {}
         review_id_to_rating = {}
 
