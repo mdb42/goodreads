@@ -27,11 +27,10 @@ REPORT EXCERPT:
 import os
 import csv
 import pickle
-from typing import Dict, List, Any, Optional
+from typing import Dict, List
 from src.classification import BaseClassifier
-from sklearn.model_selection import KFold
 from src.classification.multinomial_nb import MultinomialNB
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 class Classifier(BaseClassifier):
     """
@@ -72,7 +71,7 @@ class Classifier(BaseClassifier):
         self.models = []
         self.features = None
         
-        # Create models directory if it doesn't exist
+        # Create a model directory if it doesn't exist
         os.makedirs(models_dir, exist_ok=True)
         
         if self.logger:
@@ -101,21 +100,12 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Training classifier with {k_folds}-fold cross-validation")
-        
-        # TODO: Implement k-fold cross-validation and model training
-        # 1. Load data from zip_path and metadata_path
-        # 2. Split data into k folds
-        # 3. For each fold:
-        #    - Train model on k-1 folds
-        #    - Test on remaining fold
-        #    - Store model and metrics
-        # 4. Calculate average metrics across folds
 
-        # === Load data ===
+        # Load data
         index = self._build_index()
         doc_labels = self._load_labels(index)
 
-        # === Optional feature selection ===
+        # Optional feature selection
         feature_selector = kwargs.get("feature_selector")
         k_features = kwargs.get("k_features", 1000)
 
@@ -126,30 +116,30 @@ class Classifier(BaseClassifier):
             self.features = set(index.term_doc_freqs.keys())
             self.logger.info(f"[+] Using all {len(self.features)} terms")
 
-        # === Apply feature filtering ===
+        # Apply feature filtering
         if self.features:
             for doc_id in index.doc_term_freqs:
                 index.doc_term_freqs[doc_id] = {
                     t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
                 }
 
-        # === Train model ===
+        # Train model
         model_params = kwargs.get("model_params", {})
         model = MultinomialNB(**model_params)
         model.fit(index, doc_labels)
         self.models = [model]  # single model
 
-        # === Evaluate on full training set ===
+        # Evaluate on full training set
         preds = model.predict(index.doc_term_freqs)
 
         y_true = [doc_labels[doc_id] for doc_id in preds]
         y_pred = [preds[doc_id] for doc_id in preds]
 
-        # === Custom Accuracy
+        # Accuracy
         correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
         acc = correct / len(y_true) if y_true else 0.0
 
-        # === Custom Precision, Recall, F1 (macro-averaged)
+        # Precision, Recall, F1 (macro-averaged)
         tp = defaultdict(int)
         fp = defaultdict(int)
         fn = defaultdict(int)
@@ -241,7 +231,6 @@ class Classifier(BaseClassifier):
         try:
             # Load features
             features_path = os.path.join(models_dir, "features.pkl")
-            # TODO: Implement feature loading
             with open(features_path, 'rb') as f:
                 instance.features = pickle.load(f)
             
@@ -250,7 +239,6 @@ class Classifier(BaseClassifier):
             
             for model_file in sorted(model_files):
                 model_path = os.path.join(models_dir, model_file)
-                # TODO: Implement model loading
                 with open(model_path, 'rb') as f:
                     model = pickle.load(f)
                     instance.models.append(model)
@@ -296,19 +284,19 @@ class Classifier(BaseClassifier):
                     t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
                 }
 
-        # === Use model to predict on all documents
+        # Use model to predict on all documents
         predictions = model.predict(index.doc_term_freqs)
 
-        # === Extract true and predicted labels
+        # Extract true and predicted labels
         y_true = [doc_labels[doc_id] for doc_id in predictions]
         y_pred = [predictions[doc_id] for doc_id in predictions]
 
-        # === Compute metrics
-        # === Custom Accuracy
+        # Compute metrics
+        ## Accuracy
         correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
         acc = correct / len(y_true) if y_true else 0.0
 
-        # === Custom Precision, Recall, F1 (macro-averaged)
+        ## Precision, Recall, F1
         tp = defaultdict(int)
         fp = defaultdict(int)
         fn = defaultdict(int)
@@ -345,14 +333,6 @@ class Classifier(BaseClassifier):
             "f1": f1
         }
 
-        # Placeholder metrics
-        # return {
-        #     "accuracy": 0.0,
-        #     "precision": 0.0,
-        #     "recall": 0.0,
-        #     "f1": 0.0
-        # }
-
     def predict(self, text: str) -> int:
         """
         Predict a rating for a single preprocessed review string.
@@ -388,6 +368,12 @@ class Classifier(BaseClassifier):
         return [self.predict(text) for text in texts]
 
     def _build_index(self):
+        """
+        Helper method to build a document index from the ZIP archive, using the ParallelZipIndex method.
+
+        Returns:
+            index: Document index
+        """
         from src.index.parallel_zip_index import ParallelZipIndex
 
         if self.logger:
@@ -399,6 +385,16 @@ class Classifier(BaseClassifier):
         return index
 
     def _load_labels(self, index):
+        """
+        Loads in review ratings for each document in the index from the metadata CSV, associates each docID with its
+        rating, and returns a dictionary mapping docIDs to ratings.
+
+        Args:
+            index: Document index
+
+        Returns:
+            labels: Dictionary mapping docIDs to ratings
+        """
         if self.logger:
             self.logger.info("[+] Loading document labels using index.filenames")
         labels = {}
