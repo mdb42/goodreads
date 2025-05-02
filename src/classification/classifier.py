@@ -25,6 +25,7 @@ REPORT EXCERPT:
 """
 
 import os
+import csv
 import pickle
 from typing import Dict, List, Any, Optional
 from src.classification import BaseClassifier
@@ -67,7 +68,6 @@ class Classifier(BaseClassifier):
         self.logger = logger
         self.zip_path = zip_path
         self.metadata_path = metadata_path
-        print(self.metadata_path)
         self.models_dir = models_dir
         self.profiler = profiler
         self.models = []
@@ -358,30 +358,32 @@ class Classifier(BaseClassifier):
         return index
 
     def _load_labels(self, index):
-        import csv
-
         if self.logger:
-            self.logger.info("[+] Loading document labels using review_id column")
-
+            self.logger.info("[+] Loading document labels using index.filenames")
+        print(index.filenames)
         labels = {}
-        filename_to_id = {f"{i}.txt": i for i in range(len(index.filenames))}
+        review_id_to_rating = {}
 
+        # Step 1: Load CSV into a map from review_id → rating
         with open(self.metadata_path, newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                review_id = row.get("review_id")
+                rid = row.get("review_id")
                 rating = row.get("rating")
-                if review_id is not None and rating is not None:
-                    filename = f"{review_id}.txt"
-                    try:
-                        doc_id = filename_to_id[filename]
-                        labels[doc_id] = int(rating)
-                    except KeyError:
-                        continue  # review_id not found in filenames
+                if rid is not None and rating is not None:
+                    review_id_to_rating[rid] = int(rating)
 
-        if self.logger:
-            self.logger.info(f"[+] Loaded {len(labels)} document labels")
+        # Step 2: Walk index filenames and resolve labels
+        for doc_id, fname in index.filenames.items():
+            if not isinstance(fname, str):
+                raise TypeError(f"Expected filename as string, got {type(fname)}: {fname}")
+            review_id = os.path.splitext(fname)[0]
 
+            # removes ".txt"
+            if review_id in review_id_to_rating:
+                labels[doc_id] = review_id_to_rating[review_id]
+
+        self.logger.info(f"[+] Loaded {len(labels)} document labels from metadata")
         return labels
 
     def _count_terms(self, text: str) -> Dict[str, int]:
