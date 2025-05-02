@@ -20,6 +20,7 @@ May 1, 2025
 
 import zipfile
 from pathlib import Path
+import os
 from typing import List
 
 class ZipCorpusReader:
@@ -44,8 +45,8 @@ class ZipCorpusReader:
         Raises:
             FileNotFoundError: If the zip file doesn't exist
         """
-        self.zip_path = Path(zip_path)
-        if not self.zip_path.exists():
+        self.zip_path = zip_path.replace('\\', '/') if isinstance(zip_path, str) else zip_path
+        if not os.path.exists(self.zip_path):
             raise FileNotFoundError(f"Zip file not found: {zip_path}")
 
     def list_documents(self) -> List[str]:

@@ -25,9 +25,12 @@ REPORT EXCERPT:
 """
 
 import os
+import csv
 import pickle
-from typing import Dict, List, Any, Optional
+from typing import Dict, List
 from src.classification import BaseClassifier
+from src.classification.multinomial_nb import MultinomialNB
+from collections import defaultdict
 
 class Classifier(BaseClassifier):
     """
@@ -68,7 +71,7 @@ class Classifier(BaseClassifier):
         self.models = []
         self.features = None
         
-        # Create models directory if it doesn't exist
+        # Create a model directory if it doesn't exist
         os.makedirs(models_dir, exist_ok=True)
         
         if self.logger:
@@ -97,22 +100,80 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Training classifier with {k_folds}-fold cross-validation")
-        
-        # TODO: Implement k-fold cross-validation and model training
-        # 1. Load data from zip_path and metadata_path
-        # 2. Split data into k folds
-        # 3. For each fold:
-        #    - Train model on k-1 folds
-        #    - Test on remaining fold
-        #    - Store model and metrics
-        # 4. Calculate average metrics across folds
-        
-        # Placeholder metrics
+
+        # Load data
+        index = self._build_index()
+        doc_labels = self._load_labels(index)
+
+        # Optional feature selection
+        feature_selector = kwargs.get("feature_selector")
+        k_features = kwargs.get("k_features", 1000)
+
+        if feature_selector:
+            self.features = feature_selector(index, doc_labels, k=k_features)
+            self.logger.info(f"[+] Selected {len(self.features)} features using {feature_selector.__name__}")
+        else:
+            self.features = set(index.term_doc_freqs.keys())
+            self.logger.info(f"[+] Using all {len(self.features)} terms")
+
+        # Apply feature filtering
+        if self.features:
+            for doc_id in index.doc_term_freqs:
+                index.doc_term_freqs[doc_id] = {
+                    t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
+                }
+
+        # Train model
+        model_params = kwargs.get("model_params", {})
+        model = MultinomialNB(**model_params)
+        model.fit(index, doc_labels)
+        self.models = [model]  # single model
+
+        # Evaluate on full training set
+        preds = model.predict(index.doc_term_freqs)
+
+        y_true = [doc_labels[doc_id] for doc_id in preds]
+        y_pred = [preds[doc_id] for doc_id in preds]
+
+        # Accuracy
+        correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
+        acc = correct / len(y_true) if y_true else 0.0
+
+        # Precision, Recall, F1 (macro-averaged)
+        tp = defaultdict(int)
+        fp = defaultdict(int)
+        fn = defaultdict(int)
+        classes = set(y_true + y_pred)
+
+        for yt, yp in zip(y_true, y_pred):
+            if yt == yp:
+                tp[yt] += 1
+            else:
+                fp[yp] += 1
+                fn[yt] += 1
+
+        precision_sum = 0
+        recall_sum = 0
+        f1_sum = 0
+        for c in classes:
+            prec = tp[c] / (tp[c] + fp[c]) if (tp[c] + fp[c]) > 0 else 0
+            rec = tp[c] / (tp[c] + fn[c]) if (tp[c] + fn[c]) > 0 else 0
+            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+
+            precision_sum += prec
+            recall_sum += rec
+            f1_sum += f1
+
+        num_classes = len(classes)
+        precision = precision_sum / num_classes
+        recall = recall_sum / num_classes
+        f1 = f1_sum / num_classes
+
         return {
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "accuracy": acc,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
         }
     
     def save(self) -> bool:
@@ -124,29 +185,26 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Saving models to {self.models_dir}")
-        
+
         try:
-            # Save each model separately
-            for i, model in enumerate(self.models):
-                model_path = os.path.join(self.models_dir, f"model_{i}.pkl")
-                
-                # TODO: Implement model saving
-                # with open(model_path, 'wb') as f:
-                #     pickle.dump(model, f)
-            
-            # Save features
+            if not self.models:
+                raise ValueError("No model to save.")
+
+            model_path = os.path.join(self.models_dir, "model.pkl")
+            with open(model_path, 'wb') as f:
+                pickle.dump(self.models[0], f)
+
             features_path = os.path.join(self.models_dir, "features.pkl")
-            # TODO: Implement feature saving
-            # with open(features_path, 'wb') as f:
-            #     pickle.dump(self.features, f)
-            
+            with open(features_path, 'wb') as f:
+                pickle.dump(self.features, f)
+
             if self.logger:
-                self.logger.info(f"[+] Models saved successfully")
+                self.logger.info(f"[+] Model and features saved successfully")
             return True
-            
+
         except Exception as e:
             if self.logger:
-                self.logger.error(f"[!] Failed to save models: {e}")
+                self.logger.error(f"[!] Failed to save model: {e}")
             return False
     
     @classmethod
@@ -173,19 +231,17 @@ class Classifier(BaseClassifier):
         try:
             # Load features
             features_path = os.path.join(models_dir, "features.pkl")
-            # TODO: Implement feature loading
-            # with open(features_path, 'rb') as f:
-            #     instance.features = pickle.load(f)
+            with open(features_path, 'rb') as f:
+                instance.features = pickle.load(f)
             
             # Load models
-            model_files = [f for f in os.listdir(models_dir) if f.startswith("model_") and f.endswith('.pkl')]
+            model_files = [f for f in os.listdir(models_dir) if f.startswith("model") and f.endswith('.pkl')]
             
             for model_file in sorted(model_files):
                 model_path = os.path.join(models_dir, model_file)
-                # TODO: Implement model loading
-                # with open(model_path, 'rb') as f:
-                #     model = pickle.load(f)
-                #     instance.models.append(model)
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+                    instance.models.append(model)
             
             if logger:
                 logger.info(f"[+] Loaded {len(instance.models)} models successfully")
@@ -210,62 +266,174 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Evaluating classifier")
-        
+
         if not self.models:
-            if self.logger:
-                self.logger.error("[!] No trained models available")
-            return {
-                "accuracy": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
-                "f1": 0.0
-            }
-        
-        # TODO: Implement evaluation
-        # 1. Load test data
-        # 2. Preprocess and extract features
-        # 3. Get predictions from all models
-        # 4. Calculate metrics
-        
-        # Placeholder metrics
+            self.logger.error("[!] No trained model available for evaluation")
+            return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0}
+
+        model = self.models[0]  # single trained model
+
+        # Rebuild index and reload labels
+        index = self._build_index()
+        doc_labels = self._load_labels(index)
+
+        # Apply feature filtering (if features were selected)
+        if self.features:
+            for doc_id in index.doc_term_freqs:
+                index.doc_term_freqs[doc_id] = {
+                    t: f for t, f in index.doc_term_freqs[doc_id].items() if t in self.features
+                }
+
+        # Use model to predict on all documents
+        predictions = model.predict(index.doc_term_freqs)
+
+        # Extract true and predicted labels
+        y_true = [doc_labels[doc_id] for doc_id in predictions]
+        y_pred = [predictions[doc_id] for doc_id in predictions]
+
+        # Compute metrics
+        ## Accuracy
+        correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
+        acc = correct / len(y_true) if y_true else 0.0
+
+        ## Precision, Recall, F1
+        tp = defaultdict(int)
+        fp = defaultdict(int)
+        fn = defaultdict(int)
+        classes = set(y_true + y_pred)
+
+        for yt, yp in zip(y_true, y_pred):
+            if yt == yp:
+                tp[yt] += 1
+            else:
+                fp[yp] += 1
+                fn[yt] += 1
+
+        precision_sum = 0
+        recall_sum = 0
+        f1_sum = 0
+        for c in classes:
+            prec = tp[c] / (tp[c] + fp[c]) if (tp[c] + fp[c]) > 0 else 0
+            rec = tp[c] / (tp[c] + fn[c]) if (tp[c] + fn[c]) > 0 else 0
+            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+
+            precision_sum += prec
+            recall_sum += rec
+            f1_sum += f1
+
+        num_classes = len(classes)
+        precision = precision_sum / num_classes
+        recall = recall_sum / num_classes
+        f1 = f1_sum / num_classes
+
         return {
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "accuracy": acc,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
         }
-    
+
     def predict(self, text: str) -> int:
         """
-        Predict rating for a single review text.
-        
+        Predict a rating for a single preprocessed review string.
+
         Args:
-            text: Review text to classify
-                
+            text: A preprocessed string of terms (space-separated)
+
         Returns:
-            int: Predicted rating (1-5)
+            int: Predicted rating (1–5)
         """
         if not self.models:
-            if self.logger:
-                self.logger.error("[!] No trained models available")
-            return 3  # Default to middle rating
-        
-        # TODO: Implement prediction
-        # 1. Preprocess text
-        # 2. Extract features
-        # 3. Get predictions from all models
-        # 4. Combine predictions (e.g., voting, averaging)
-        
-        return 3  # Placeholder (default to middle rating)
-    
+            self.logger.error("[!] No trained model available for prediction")
+            return 3  # neutral fallback
+
+        model = self.models[0]
+        term_freqs = self._count_terms(text)
+
+        doc_id = 0  # dummy key
+        preds = model.predict({doc_id: term_freqs})
+
+        return preds[doc_id]
+
     def predict_batch(self, texts: List[str]) -> List[int]:
         """
         Predict ratings for multiple review texts.
         
         Args:
             texts: List of review texts to classify
-                
+
         Returns:
             List[int]: Predicted ratings (1-5)
         """
         return [self.predict(text) for text in texts]
+
+    def _build_index(self):
+        """
+        Helper method to build a document index from the ZIP archive, using the ParallelZipIndex method.
+
+        Returns:
+            index: Document index
+        """
+        from src.index.parallel_zip_index import ParallelZipIndex
+
+        if self.logger:
+            self.logger.info("[+] Building or loading index")
+
+        index = ParallelZipIndex(self.zip_path, logger=self.logger)
+        index.build_index()
+
+        return index
+
+    def _load_labels(self, index):
+        """
+        Loads in review ratings for each document in the index from the metadata CSV, associates each docID with its
+        rating, and returns a dictionary mapping docIDs to ratings.
+
+        Args:
+            index: Document index
+
+        Returns:
+            labels: Dictionary mapping docIDs to ratings
+        """
+        if self.logger:
+            self.logger.info("[+] Loading document labels using index.filenames")
+        labels = {}
+        review_id_to_rating = {}
+
+        # Load CSV into a map from review_id → rating
+        with open(self.metadata_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                rid = row.get("review_id")
+                rating = row.get("rating")
+                if rid is not None and rating is not None:
+                    review_id_to_rating[rid] = int(rating)
+
+        # Walk index filenames and resolve labels
+        for doc_id, fname in index.filenames.items():
+            if not isinstance(fname, str):
+                raise TypeError(f"Expected filename as string, got {type(fname)}: {fname}")
+            review_id = os.path.splitext(fname)[0]
+
+            # removes ".txt"
+            if review_id in review_id_to_rating:
+                labels[doc_id] = review_id_to_rating[review_id]
+
+        self.logger.info(f"[+] Loaded {len(labels)} document labels from metadata")
+        return labels
+
+    def _count_terms(self, text: str) -> Dict[str, int]:
+        """
+        Convert a preprocessed string into a term frequency dictionary.
+
+        Args:
+            text: A pre-tokenized, stemmed string (e.g., "book amaz could put down")
+
+        Returns:
+            Dict[str, int]: Term frequency map
+        """
+        tf = {}
+        for term in text.split():
+            if not self.features or term in self.features:
+                tf[term] = tf.get(term, 0) + 1
+        return tf

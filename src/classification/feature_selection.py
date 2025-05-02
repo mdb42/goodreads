@@ -60,8 +60,58 @@ def mutual_information(index, doc_labels, k=1000):
 
 def chi_square(index, doc_labels, k=1000):
     # TODO: Implement Chi-Square feature selection
-    pass
+    classes = set(doc_labels.values())
+    vocab = set(index.term_doc_freqs.keys())
+    N = len(doc_labels)
+
+    # Precompute doc counts per class
+    N_c = {c: sum(1 for label in doc_labels.values() if label == c) for c in classes}
+
+    # Precompute term counts per class
+    chi2_scores = {}
+
+    for term in vocab:
+        term_docs = index.term_doc_freqs[term]
+        N_t = len(term_docs)
+
+        # Compute class-wise counts
+        N_tc = defaultdict(int)
+        for doc_id in term_docs:
+            label = doc_labels.get(doc_id)
+            if label is not None:
+                N_tc[label] += 1
+
+        max_score = 0
+        for c in classes:
+            N11 = N_tc[c]  # Term present in doc; doc is in class c
+            N10 = N_t - N11  # Term present in doc; doc is NOT in class c
+            N01 = N_c[c] - N11  # Term NOT present in doc; doc is in class c
+            N00 = N - N11 - N10 - N01  # Term NOT present in doc; doc is NOT in class c
+
+            numerator = (N11 * N00 - N10 * N01) ** 2 * N
+            denominator = (N11 + N01) * (N10 + N00) * (N11 + N10) * (N01 + N00)
+
+            if denominator > 0:
+                score = numerator / denominator
+                max_score = max(max_score, score)
+
+        chi2_scores[term] = max_score
+
+    selected_terms = sorted(chi2_scores.items(), key=lambda x: x[1], reverse=True)[:k]
+    return {term for term, _ in selected_terms}
 
 def frequency_based(index, doc_labels, k=1000):
     # TODO: Implement frequency-based feature selection
-    pass
+    class_term_counts = defaultdict(Counter)
+
+    for doc_id, label in doc_labels.items():
+        term_freqs = index.doc_term_freqs.get(doc_id, {})
+        for term in term_freqs:
+            class_term_counts[label][term] += 1
+
+    combined_counter = Counter()
+    for class_counter in class_term_counts.values():
+        combined_counter.update(class_counter)
+
+    most_common = combined_counter.most_common(k)
+    return {term for term, _ in most_common}
