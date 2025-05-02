@@ -31,6 +31,9 @@ from typing import Dict, List
 from src.classification import BaseClassifier
 from src.classification.multinomial_nb import MultinomialNB
 from collections import defaultdict
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import confusion_matrix
 
 class Classifier(BaseClassifier):
     """
@@ -291,6 +294,9 @@ class Classifier(BaseClassifier):
         y_true = [doc_labels[doc_id] for doc_id in predictions]
         y_pred = [predictions[doc_id] for doc_id in predictions]
 
+        # Outputting a confusion matrix for the report
+        self._plot_confusion_matrix(y_true, y_pred, labels=[1, 2, 3, 4, 5])
+
         # Compute metrics
         ## Accuracy
         correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
@@ -437,3 +443,50 @@ class Classifier(BaseClassifier):
             if not self.features or term in self.features:
                 tf[term] = tf.get(term, 0) + 1
         return tf
+
+    def _plot_confusion_matrix(self, y_true, y_pred, labels=None, title="Multinomial Naive Bayes Confusion Matrix"):
+        """
+        Plot a confusion matrix using matplotlib.
+
+        Args:
+            y_true (List[int]): Ground truth labels
+            y_pred (List[int]): Predicted labels
+            labels (List[int]): List of class labels (e.g., [1,2,3,4,5])
+            title (str): Title of the plot
+        """
+        if labels is None:
+            labels = sorted(set(y_true + y_pred))
+
+        cm = confusion_matrix(y_true, y_pred, labels=labels)
+        cm_normalized = cm.astype("float") / cm.sum(axis=1, keepdims=True)
+
+        fig, ax = plt.subplots(figsize=(7, 6))
+        im = ax.imshow(cm_normalized, interpolation='nearest', cmap=plt.cm.Blues)
+
+        # Add color bar
+        cbar = ax.figure.colorbar(im, ax=ax)
+        cbar.ax.set_ylabel("Proportion", rotation=-90, va="bottom")
+
+        # Set ticks and labels
+        ax.set(
+            xticks=np.arange(len(labels)),
+            yticks=np.arange(len(labels)),
+            xticklabels=labels,
+            yticklabels=labels,
+            ylabel="True label",
+            xlabel="Predicted label",
+            title=title
+        )
+
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+        # Annotate cells with integer counts
+        thresh = cm_normalized.max() / 2.0
+        for i in range(len(labels)):
+            for j in range(len(labels)):
+                ax.text(j, i, f"{cm[i, j]}",
+                        ha="center", va="center",
+                        color="white" if cm_normalized[i, j] > thresh else "black")
+
+        fig.tight_layout()
+        plt.show()
