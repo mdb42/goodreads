@@ -23,16 +23,16 @@ class MultinomialNB:
         self.vocab = set(index.term_doc_freqs.keys())
         N = len(doc_labels)  # total number of documents
 
-        # Step 1: Count docs per class
+        # Count docs per class
         class_doc_counts = defaultdict(int)
         for c in doc_labels.values():
             class_doc_counts[c] += 1
 
-        # Step 2: Compute priors
+        # Compute priors
         for c in self.classes:
             self.prior[c] = class_doc_counts[c] / N
 
-        # Step 3: Accumulate token counts per class
+        # Accumulate token counts per class
         T_ct = defaultdict(lambda: defaultdict(int))  # T_ct[t][c]
         total_tokens_in_class = defaultdict(int)
 
@@ -42,7 +42,7 @@ class MultinomialNB:
                 T_ct[t][label] += freq
                 total_tokens_in_class[label] += freq
 
-        # Step 4: Compute conditional probabilities
+        # Compute conditional probabilities
         self.condprob = defaultdict(dict)
 
         print(f"Classes: {self.classes}")
@@ -85,7 +85,7 @@ class MultinomialNB:
 
                 scores[c] = score
 
-            # Choose class with highest score
+            # Choose the class with the highest score
             predictions[doc_id] = max(scores.items(), key=lambda x: x[1])[0]
 
         return predictions

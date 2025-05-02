@@ -400,7 +400,7 @@ class Classifier(BaseClassifier):
         labels = {}
         review_id_to_rating = {}
 
-        # Step 1: Load CSV into a map from review_id → rating
+        # Load CSV into a map from review_id → rating
         with open(self.metadata_path, newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
@@ -409,7 +409,7 @@ class Classifier(BaseClassifier):
                 if rid is not None and rating is not None:
                     review_id_to_rating[rid] = int(rating)
 
-        # Step 2: Walk index filenames and resolve labels
+        # Walk index filenames and resolve labels
         for doc_id, fname in index.filenames.items():
             if not isinstance(fname, str):
                 raise TypeError(f"Expected filename as string, got {type(fname)}: {fname}")
