@@ -32,7 +32,7 @@ However, this seems to lose a bit of fidelity when more lukewarm reviews are pro
 	\centering
 	\begin{tabular}{c r r r r r}
 		\hline
-		\textbf{Cluster} & \textbf{Size (Users)} & \textbf{Avg. Length} & \textbf{Avg. Rating} & \textbf{Num Reviews} & \textbf{Rating Variance} \\
+		\textbf{Cluster} & \textbf{Size (Users)} & \textbf{Avg. Word Length} & \textbf{Avg. Rating} & \textbf{Num Reviews} & \textbf{Rating Variance} \\
 		\hline
 		0 & 779  & 3442.32 & 3.7354 & 7.7895 & 0.6028 \\
 		1 & 4712 & 1104.07 & 3.7789 & 8.8326 & 0.6937 \\
@@ -43,9 +43,12 @@ However, this seems to lose a bit of fidelity when more lukewarm reviews are pro
 	\end{tabular}
 \end{table*}
 
-\autoref{tab:user_clusters} shows the results of the cluster analysis of Goodreads reviewers, which gives us insight into the tendencies that these reveiwers exhibit.
+\autoref{tab:user_clusters} shows the results of the K-means cluster analysis of Goodreads reviewers, which gives us insight into what archetypes may exist among reviewers.
 
-This was separated into four clusters. Cluster 0 seems to encapsulate fairly verbose reviewers with lower ratings relative to the rest of the clusters. Cluster 4 seems to contain the most verbose reviewers within the dataset. This
+Reveiwers were ultimately separated into four clusters. Cluster 0 seems to encapsulate fairly verbose reviewers with lower ratings relative to the rest of the clusters. Cluster 4 seems to contain the most verbose reviewers within the dataset. This
 seems to suggest that more verbose reviewers tend to leave more negative comments relative to other reviewers. While the middle clusters contain the grand majority of reviewers in the dataset, it seems that these reviewers are much less likely to post long, negative reviews
 
-\autoref{fig:pca} exhibits a PCA visualization of the clustering analysis.
+\autoref{fig:pca} exhibits a principle components analysis visualization of the clustering analysis, which better demonstrates the size of each cluster and their exhibited variance. Consistent with the metrics shown in \autoref{tab:user_clusters},
+we can see that both cluster 0 and 4 are the furthest right along the PC1
+axis, indicating that these clusters contain much larger reviews. The remaining clusters
+also have a greater variance along the PC2 axis, indicating that these reviewers are, in fact, leaving more positive reviews than those leaving longer reviews in general.
