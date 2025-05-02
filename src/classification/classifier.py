@@ -31,7 +31,6 @@ from typing import Dict, List, Any, Optional
 from src.classification import BaseClassifier
 from sklearn.model_selection import KFold
 from src.classification.multinomial_nb import MultinomialNB
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from collections import defaultdict, Counter
 
 class Classifier(BaseClassifier):
@@ -146,15 +145,44 @@ class Classifier(BaseClassifier):
         y_true = [doc_labels[doc_id] for doc_id in preds]
         y_pred = [preds[doc_id] for doc_id in preds]
 
-        acc = accuracy_score(y_true, y_pred)
-        p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
+        # === Custom Accuracy
+        correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
+        acc = correct / len(y_true) if y_true else 0.0
 
-        self.logger.info(f"[+] Training complete. Accuracy: {acc:.4f}")
+        # === Custom Precision, Recall, F1 (macro-averaged)
+        tp = defaultdict(int)
+        fp = defaultdict(int)
+        fn = defaultdict(int)
+        classes = set(y_true + y_pred)
+
+        for yt, yp in zip(y_true, y_pred):
+            if yt == yp:
+                tp[yt] += 1
+            else:
+                fp[yp] += 1
+                fn[yt] += 1
+
+        precision_sum = 0
+        recall_sum = 0
+        f1_sum = 0
+        for c in classes:
+            prec = tp[c] / (tp[c] + fp[c]) if (tp[c] + fp[c]) > 0 else 0
+            rec = tp[c] / (tp[c] + fn[c]) if (tp[c] + fn[c]) > 0 else 0
+            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+
+            precision_sum += prec
+            recall_sum += rec
+            f1_sum += f1
+
+        num_classes = len(classes)
+        precision = precision_sum / num_classes
+        recall = recall_sum / num_classes
+        f1 = f1_sum / num_classes
 
         return {
             "accuracy": acc,
-            "precision": p,
-            "recall": r,
+            "precision": precision,
+            "recall": recall,
             "f1": f1
         }
     
@@ -218,7 +246,7 @@ class Classifier(BaseClassifier):
                 instance.features = pickle.load(f)
             
             # Load models
-            model_files = [f for f in os.listdir(models_dir) if f.startswith("model_") and f.endswith('.pkl')]
+            model_files = [f for f in os.listdir(models_dir) if f.startswith("model") and f.endswith('.pkl')]
             
             for model_file in sorted(model_files):
                 model_path = os.path.join(models_dir, model_file)
@@ -276,10 +304,46 @@ class Classifier(BaseClassifier):
         y_pred = [predictions[doc_id] for doc_id in predictions]
 
         # === Compute metrics
-        acc = accuracy_score(y_true, y_pred)
-        p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
+        # === Custom Accuracy
+        correct = sum(yt == yp for yt, yp in zip(y_true, y_pred))
+        acc = correct / len(y_true) if y_true else 0.0
 
-        return {"accuracy": acc, "precision": p, "recall": r, "f1": f1}
+        # === Custom Precision, Recall, F1 (macro-averaged)
+        tp = defaultdict(int)
+        fp = defaultdict(int)
+        fn = defaultdict(int)
+        classes = set(y_true + y_pred)
+
+        for yt, yp in zip(y_true, y_pred):
+            if yt == yp:
+                tp[yt] += 1
+            else:
+                fp[yp] += 1
+                fn[yt] += 1
+
+        precision_sum = 0
+        recall_sum = 0
+        f1_sum = 0
+        for c in classes:
+            prec = tp[c] / (tp[c] + fp[c]) if (tp[c] + fp[c]) > 0 else 0
+            rec = tp[c] / (tp[c] + fn[c]) if (tp[c] + fn[c]) > 0 else 0
+            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+
+            precision_sum += prec
+            recall_sum += rec
+            f1_sum += f1
+
+        num_classes = len(classes)
+        precision = precision_sum / num_classes
+        recall = recall_sum / num_classes
+        f1 = f1_sum / num_classes
+
+        return {
+            "accuracy": acc,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
+        }
 
         # Placeholder metrics
         # return {
