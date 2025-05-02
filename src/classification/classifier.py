@@ -167,29 +167,26 @@ class Classifier(BaseClassifier):
         """
         if self.logger:
             self.logger.info(f"[+] Saving models to {self.models_dir}")
-        
+
         try:
-            # Save each model separately
-            for i, model in enumerate(self.models):
-                model_path = os.path.join(self.models_dir, f"model_{i}.pkl")
-                
-                # TODO: Implement model saving
-                # with open(model_path, 'wb') as f:
-                #     pickle.dump(model, f)
-            
-            # Save features
+            if not self.models:
+                raise ValueError("No model to save.")
+
+            model_path = os.path.join(self.models_dir, "model.pkl")
+            with open(model_path, 'wb') as f:
+                pickle.dump(self.models[0], f)
+
             features_path = os.path.join(self.models_dir, "features.pkl")
-            # TODO: Implement feature saving
-            # with open(features_path, 'wb') as f:
-            #     pickle.dump(self.features, f)
-            
+            with open(features_path, 'wb') as f:
+                pickle.dump(self.features, f)
+
             if self.logger:
-                self.logger.info(f"[+] Models saved successfully")
+                self.logger.info(f"[+] Model and features saved successfully")
             return True
-            
+
         except Exception as e:
             if self.logger:
-                self.logger.error(f"[!] Failed to save models: {e}")
+                self.logger.error(f"[!] Failed to save model: {e}")
             return False
     
     @classmethod
@@ -217,8 +214,8 @@ class Classifier(BaseClassifier):
             # Load features
             features_path = os.path.join(models_dir, "features.pkl")
             # TODO: Implement feature loading
-            # with open(features_path, 'rb') as f:
-            #     instance.features = pickle.load(f)
+            with open(features_path, 'rb') as f:
+                instance.features = pickle.load(f)
             
             # Load models
             model_files = [f for f in os.listdir(models_dir) if f.startswith("model_") and f.endswith('.pkl')]
@@ -226,9 +223,9 @@ class Classifier(BaseClassifier):
             for model_file in sorted(model_files):
                 model_path = os.path.join(models_dir, model_file)
                 # TODO: Implement model loading
-                # with open(model_path, 'rb') as f:
-                #     model = pickle.load(f)
-                #     instance.models.append(model)
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+                    instance.models.append(model)
             
             if logger:
                 logger.info(f"[+] Loaded {len(instance.models)} models successfully")
