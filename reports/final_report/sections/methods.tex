@@ -24,7 +24,7 @@ To predict user star ratings based on review text, we will train a Multinomial N
 \[
 P(c \mid d) \propto P(c) \prod_{i=1}^{n} P(t_i \mid c)^{f_{i,d}},
 \]
-where \( f_{i,d} \) denotes the frequency of token \( t_i \) in document \( d \). Evaluation will be conducted using five-fold cross-validation, and we will report accuracy and F1-scores across all five rating categories. Comparative testing with support vector machines and logistic regression will be used to evaluate model performance on both extreme and ambiguous reviews.
+where \( f_{i,d} \) denotes the frequency of token \( t_i \) in document \( d \). Evaluation will be conducted using five-fold cross-validation, and we will report accuracy and \(F_1\)-scores across all five rating categories. Comparative testing with support vector machines and logistic regression will be used to evaluate model performance on both extreme and ambiguous reviews.
 
 \subsubsection{Reviewer Clustering with K-means}
 To identify latent reviewer archetypes, we will apply K-means clustering to the aggregated user feature vectors. Each user will be represented by a hybrid vector comprising behavioral features (e.g., mean rating, review frequency) and semantic features derived from \textit{tf-idf} vectors of their authored reviews. All features will be standardized to ensure compatibility with the Euclidean distance metric used by K-means.
