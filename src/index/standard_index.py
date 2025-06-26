@@ -78,11 +78,11 @@ class StandardIndex(BaseIndex):
         if self.special_chars:
             self.special_chars_pattern = re.compile(f'[{re.escape("".join(self.special_chars))}]')
 
-        # Ensure NLTK punkt tokenizer is available
+        # Ensure NLTK punkt_tab tokenizer is available
         try:
-            nltk.data.find('tokenizers/punkt')
+            nltk.data.find('tokenizers/punkt_tab')
         except LookupError:
-            nltk.download('punkt', quiet=True)
+            nltk.download('punkt_tab', quiet=True)
 
         # Initialize core index structures
         self.stemmer = PorterStemmer()
